@@ -1,25 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
   const $ = (s) => document.querySelector(s);
 
-  // -----------------------------
-  // 1. INITIALIZE SUPABASE
-  // -----------------------------
   const supabaseUrl = "https://nytlbtwhmrvpzxqzusxg.supabase.co";
   const supabaseAnonKey =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dGxidHdobXJ2cHp4cXp1c3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzk2OTQsImV4cCI6MjA4NjgxNTY5NH0.mIx0MFqIHzL_zgpgLaDyImWgAAMoxRni2Nk-9iPYYzs";
   const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-  // -----------------------------
-  // 2. UI ELEMENTS
-  // -----------------------------
   const UI = {
-    // existing panels
     panelLogin: $("#panelLogin"),
     panelRegister: $("#panelRegister"),
     panelWelcome: $("#panelWelcome"),
     topSubtitle: $("#topSubtitle"),
 
-    // auth elements
     loginForm: $("#loginForm"),
     loginMsg: $("#loginMsg"),
     goToRegisterBtn: $("#goToRegisterBtn"),
@@ -28,21 +20,18 @@ document.addEventListener("DOMContentLoaded", () => {
     regMsg: $("#regMsg"),
     backToLoginBtn: $("#backToLoginBtn"),
 
-    // welcome
     welcomeLine: $("#welcomeLine"),
     welcomeTitle: $("#welcomeTitle"),
     welcomeCompany: $("#welcomeCompany"),
     continueBtn: $("#continueBtn"),
     logoutBtn: $("#logoutBtn"),
 
-    // help modal
     helpBtn: $("#helpBtn"),
     helpModal: $("#helpModal"),
     modalBackdrop: $("#modalBackdrop"),
     closeModal: $("#closeModal"),
     modalOk: $("#modalOk"),
 
-    // NEW: assessment panels
     panelAssessmentIntro: $("#panelAssessmentIntro"),
     panelAssessmentQuiz: $("#panelAssessmentQuiz"),
     panelAssessmentResult: $("#panelAssessmentResult"),
@@ -62,19 +51,14 @@ document.addEventListener("DOMContentLoaded", () => {
     assessmentRetakeBtn: $("#assessmentRetakeBtn"),
   };
 
-  // Logos live in frontend only. DB returns partner info; map partner name -> logo here.
   const PARTNER_ASSETS = {
     Terveystalo: { logo: ` TERVEYSTALO ` },
     "Mehiläinen": { logo: ` MEHILÄINEN ` },
     "Lovnity Partner": { logo: ` LOVNITY ` },
   };
 
-  // keep current user in memory (useful for saving assessment)
   let CURRENT_USER = null;
 
-  // -----------------------------
-  // 3. SESSION CHECK
-  // -----------------------------
   checkSession();
 
   async function checkSession() {
@@ -89,20 +73,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // -----------------------------
-  // 4. NAVIGATION
-  // -----------------------------
   UI.goToRegisterBtn.addEventListener("click", showRegister);
   UI.backToLoginBtn.addEventListener("click", showLogin);
 
-  // Restrict Invite Code Input to Numbers
   $("#inviteCodeInput").addEventListener("input", (e) => {
     e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6);
   });
 
-  // -----------------------------
-  // 5. LOGIN
-  // -----------------------------
   UI.loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     setMsg(UI.loginMsg, "");
@@ -111,10 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = $("#loginPassword").value;
 
     disableForm(UI.loginForm, "Logging in...");
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       enableForm(UI.loginForm, "Log In");
@@ -126,9 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
     await fetchProfileAndShowWelcome(data.user);
   });
 
-  // -----------------------------
-  // 6. REGISTRATION
-  // -----------------------------
   UI.registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     setMsg(UI.regMsg, "");
@@ -148,7 +119,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     disableForm(UI.registerForm, "Creating account...");
 
-    // 1) Pre-check the code so we can fail early on the frontend if it's wrong
     const { data: codeCheck, error: codeErr } = await supabase
       .from("partner_invites")
       .select("code")
@@ -163,7 +133,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // 2) Register the user (Trigger handles the rest)
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -173,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
           last_name: surname,
           age: age,
           gender: gender,
-          business_code: inviteCode, // Matches SQL trigger logic
+          business_code: inviteCode,
         },
       },
     });
@@ -189,9 +158,6 @@ document.addEventListener("DOMContentLoaded", () => {
     await fetchProfileAndShowWelcome(data.user);
   });
 
-  // -----------------------------
-  // 7. WELCOME (profile fetch)
-  // -----------------------------
   async function fetchProfileAndShowWelcome(user) {
     if (!user) return;
 
@@ -201,7 +167,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let partnerName = null;
 
     try {
-      // 1) Try to fetch from the database (Ideal Scenario)
       const { data: profile } = await supabase
         .from("users")
         .select("last_name, business_partners(name)")
@@ -212,7 +177,6 @@ document.addEventListener("DOMContentLoaded", () => {
         lastName = profile.last_name || lastName;
         partnerName = profile.business_partners?.name;
       } else {
-        // 2) FALLBACK: If profile row is missing, check Auth Metadata directly!
         const meta = user.user_metadata || {};
         lastName = meta.last_name || meta.first_name || "User";
 
@@ -232,13 +196,9 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Profile fetch error:", err);
     }
 
-    showWelcome({
-      lastName: lastName,
-      partner: attachPartnerAssets(partnerName),
-    });
+    showWelcome({ lastName, partner: attachPartnerAssets(partnerName) });
   }
 
-  // Welcome -> Assessment Intro (NEW)
   UI.continueBtn.addEventListener("click", () => {
     showAssessmentIntro();
   });
@@ -252,12 +212,11 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // -----------------------------
-  // 8. ASSESSMENT FLOW (NEW)
+  // Assessment flow
   // -----------------------------
   UI.takeQuizBtn.addEventListener("click", showAssessmentQuiz);
 
   UI.skipQuizBtn.addEventListener("click", () => {
-    // keep your existing placeholder behavior
     alert("Next: route to your main app page.");
   });
 
@@ -272,7 +231,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   UI.assessmentDoneBtn.addEventListener("click", () => {
-    // keep your existing placeholder behavior
     alert("Next: route to your main app page.");
   });
 
@@ -285,19 +243,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const evaluator = window.LovnityQuizLogic?.evaluateAssessment;
     if (typeof evaluator !== "function") {
-      setMsg(
-        UI.assessmentMsg,
-        "Quiz logic not loaded. Make sure quizLogic.js is included before app.js.",
-        "error"
-      );
+      setMsg(UI.assessmentMsg, "Quiz logic not loaded. Include quizLogic.js before app.js.", "error");
       return;
     }
 
     const result = evaluator(answers);
 
-    // Save ONLY {user_id, score, recommendations} in backend
-    // NOTE: create this table in Supabase (recommended name): relationship_assessments
-    // Columns: id uuid pk, user_id uuid, score int, recommendations jsonb, created_at timestamptz
+    // Save ONLY 2 suggestions + score
     try {
       const {
         data: { user },
@@ -309,22 +261,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const payload = {
         user_id: user.id,
         score: result.score,
-        recommendations: result.recommendations, // json/jsonb
+        recommendations: result.recommendations, // ✅ only 2
       };
 
-      const { error: insErr } = await supabase
-        .from("relationship_assessments")
-        .insert(payload);
-
+      const { error: insErr } = await supabase.from("relationship_assessments").insert(payload);
       if (insErr) throw insErr;
     } catch (err) {
       console.error(err);
-      setMsg(
-        UI.assessmentMsg,
-        "Could not save result to backend (table/policy). Showing your result anyway.",
-        "error"
-      );
-      // continue to show result even if save fails
+      setMsg(UI.assessmentMsg, "Could not save result to backend. Showing your result anyway.", "error");
     }
 
     renderAssessmentResult(result);
@@ -346,7 +290,6 @@ document.addEventListener("DOMContentLoaded", () => {
       respect: Number(get("#q7_respect")),
     };
 
-    // validate Q7 1..7
     for (const [k, v] of Object.entries(q7)) {
       if (!Number.isFinite(v) || v < 1 || v > 7) {
         setMsg(UI.assessmentMsg, `Question 7: "${k}" must be a number 1–7.`, "error");
@@ -379,14 +322,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderAssessmentResult(result) {
-    UI.assessmentScoreLine.textContent = `Score: ${result.score} / 10 🧾`;
+    UI.assessmentScoreLine.textContent = `Your "relationship aspects": ${result.score} / 10 🧾`;
     UI.assessmentExtraLine.textContent =
-      result.q7Average != null
-        ? `Your “relationship aspects” average: ${result.q7Average} (1–7 scale)`
-        : "";
+      result.q7Average != null ? `(Q7 average: ${result.q7Average} on 1–7 scale)` : "";
 
     UI.assessmentRecs.innerHTML = "";
-    (result.recommendations || []).forEach((r) => {
+    (result.recommendations || []).slice(0, 2).forEach((r) => {
       const li = document.createElement("li");
       li.textContent = r;
       UI.assessmentRecs.appendChild(li);
@@ -394,7 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // -----------------------------
-  // 9. MODALS
+  // Modals
   // -----------------------------
   UI.helpBtn.addEventListener("click", () => {
     UI.modalBackdrop.classList.remove("hidden");
@@ -411,14 +352,12 @@ document.addEventListener("DOMContentLoaded", () => {
   UI.modalBackdrop.addEventListener("click", closeHelpModal);
 
   // -----------------------------
-  // 10. VIEWS
+  // Views
   // -----------------------------
   function hideAllPanels() {
     UI.panelLogin.classList.add("hidden");
     UI.panelRegister.classList.add("hidden");
     UI.panelWelcome.classList.add("hidden");
-
-    // new panels
     UI.panelAssessmentIntro.classList.add("hidden");
     UI.panelAssessmentQuiz.classList.add("hidden");
     UI.panelAssessmentResult.classList.add("hidden");
@@ -477,7 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // -----------------------------
-  // 11. HELPERS
+  // Helpers
   // -----------------------------
   function setMsg(el, text, type) {
     if (!el) return;
@@ -504,6 +443,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function shake(el) {
+    if (!el?.animate) return;
     el.animate(
       [
         { transform: "translateX(0)" },
@@ -522,25 +462,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (c) => {
-      return (
-        {
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#39;",
-        }[c] || c
-      );
-    });
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
   function attachPartnerAssets(partnerName) {
     const assets = partnerName && PARTNER_ASSETS[partnerName] ? PARTNER_ASSETS[partnerName] : {};
-    return {
-      name: partnerName || "Partner",
-      accent: assets.accent || "",
-      logo: assets.logo || "",
-    };
+    return { name: partnerName || "Partner", accent: assets.accent || "", logo: assets.logo || "" };
   }
 });
