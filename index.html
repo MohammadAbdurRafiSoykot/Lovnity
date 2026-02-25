@@ -29,7 +29,7 @@
 
     <main class="main">
       <section class="shell">
-        <section class="card" id="panelLogin">
+        <section class="card authCard" id="panelLogin">
           <div class="card__head">
             <div>
               <div class="pill"><span class="pill__dot"></span>Sign In</div>
@@ -63,7 +63,7 @@
           </form>
         </section>
 
-        <section class="card hidden" id="panelRegister">
+        <section class="card authCard hidden" id="panelRegister">
           <div class="card__head">
             <div>
               <div class="pill"><span class="pill__dot"></span>Registration</div>
@@ -143,14 +143,13 @@
               <p class="welcome__company" id="welcomeCompany"></p>
 
               <div class="actions">
-                <button class="btn btn--primary" id="continueBtn" type="button">Continue to App</button>
+                <button class="btn btn--primary" id="continueBtn" type="button">Continue</button>
                 <button class="btn btn--ghost" id="logoutBtn" type="button">Log Out</button>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- ✅ NEW: Assessment Intro -->
         <section class="card hidden" id="panelAssessmentIntro">
           <div class="card__head">
             <div>
@@ -161,9 +160,9 @@
           </div>
 
           <div class="stack">
-            <h2 class="title">Before you continue… 💗</h2>
+            <h2 class="title">YOUR RESULT? First take the quiz 💗</h2>
             <p class="muted">
-              Take a short couple-specific assessment and get a score (0–10) plus 3 suggestions.
+              Take a short couple-specific assessment and get a score (0–10) plus suggestions.
             </p>
 
             <div class="actions">
@@ -173,7 +172,6 @@
           </div>
         </section>
 
-        <!-- ✅ NEW: Assessment Quiz -->
         <section class="card hidden" id="panelAssessmentQuiz">
           <div class="card__head">
             <div>
@@ -302,7 +300,6 @@
           </form>
         </section>
 
-        <!-- ✅ NEW: Assessment Result -->
         <section class="card hidden" id="panelAssessmentResult">
           <div class="card__head">
             <div>
@@ -312,16 +309,16 @@
             <div class="chip">LOVNITY</div>
           </div>
 
-          <div class="stack">
-            <h2 class="title">Your result 🎉</h2>
-            <p class="resultLine" id="assessmentScoreLine"></p>
+          <div class="stack resultCenter">
+            <h2 class="title">YOUR RESULT</h2>
             <p class="muted" id="assessmentExtraLine"></p>
+            <p class="resultLine" id="assessmentScoreLine"></p>
 
-            <h3 class="h3">Top 3 suggestions 💡</h3>
-            <ul class="recs" id="assessmentRecs"></ul>
+            <h3 class="h3">Top 2 suggestions</h3>
+            <ol class="recs recsCenter" id="assessmentRecs"></ol>
 
-            <div class="actions">
-              <button class="btn btn--primary" id="assessmentDoneBtn" type="button">Continue to App ➜</button>
+            <div class="actions actionsCenter">
+              <button class="btn btn--primary" id="assessmentDoneBtn" type="button">Continue</button>
               <button class="btn btn--ghost" id="assessmentRetakeBtn" type="button">Retake</button>
             </div>
           </div>
