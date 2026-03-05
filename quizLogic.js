@@ -1,117 +1,66 @@
-// quizLogic.js
-// Pure logic only (no DOM). Safe to unit-test.
+// quizlogic.js
+// Pure quiz logic + configuration. No DOM. No Supabase.
 
-(function (global) {
-  function clamp(n, min, max) {
-    return Math.max(min, Math.min(max, n));
+export const CLASS_META = {
+  1: { label: "Communication" },
+  2: { label: "Trust and Betrayal" },
+  3: { label: "Sex and intimacy" },
+};
+
+export const QUIZ_ITEMS = [
+  { id: "communication", label: "Communication", classId: 1 },
+  { id: "everyday", label: "Everyday (household chores, responsibilities, schedules)", classId: 1 },
+  { id: "trust", label: "Trust", classId: 2 },
+  { id: "difference", label: "Difference", classId: 2 },
+  { id: "conflicts", label: "Conflicts and problems Handling", classId: 1 },
+  { id: "emotional_intimacy", label: "Emotional Intimacy", classId: 3 },
+  { id: "physical_intimacy", label: "Physical Intimacy and Sexuality", classId: 3 },
+  { id: "respect", label: "Respecting each other", classId: 1 },
+];
+
+// Slider scale
+export const SLIDER_MIN = 1;
+export const SLIDER_MAX = 10;
+export const SLIDER_STEP = 1;
+export const SLIDER_DEFAULT = 5;
+
+/**
+ * Scores answers:
+ * - sum per class
+ * - average per class
+ * - winner = class with highest avg (tie-break: sum desc, then classId asc)
+ */
+export function scoreQuiz(answers) {
+  const agg = {
+    1: { sum: 0, count: 0 },
+    2: { sum: 0, count: 0 },
+    3: { sum: 0, count: 0 },
+  };
+
+  for (const item of QUIZ_ITEMS) {
+    const v = Number(answers?.[item.id] ?? 0);
+    agg[item.classId].sum += v;
+    agg[item.classId].count += 1;
   }
 
-  function avg(nums) {
-    if (!nums.length) return 0;
-    return nums.reduce((a, b) => a + b, 0) / nums.length;
-  }
+  const classResults = Object.keys(agg).map((k) => {
+    const classId = Number(k);
+    const sum = agg[classId].sum;
+    const count = agg[classId].count;
+    const avg = count ? sum / count : 0;
 
-  function evaluateAssessment(answers) {
-    const scoreParts = [];
+    return { classId, label: CLASS_META[classId].label, sum, count, avg };
+  });
 
-    scoreParts.push(answers.q1_gender ? 1 : 0);
-    scoreParts.push(answers.q2_age ? 1 : 0);
-    scoreParts.push(answers.q3_live === "Yes" ? 1 : 0);
-    scoreParts.push(answers.q4_type === "Closed" ? 1 : 0);
+  classResults.sort((a, b) => {
+    if (b.avg !== a.avg) return b.avg - a.avg;
+    if (b.sum !== a.sum) return b.sum - a.sum;
+    return a.classId - b.classId;
+  });
 
-    const togetherGood = ["3–5 years", "6–10 years", "11–20 years", "21–30 years", "over 30 years"].includes(
-      answers.q5_together
-    );
-    scoreParts.push(togetherGood ? 1 : 0);
-
-    const diffGood = ["less than 6 months", "6–12 months"].includes(answers.q6_difficulties);
-    scoreParts.push(diffGood ? 1 : 0);
-
-    const q7 = answers.q7 || {};
-    const q7Vals = [
-      q7.communication,
-      q7.everyday,
-      q7.trust,
-      q7.differences,
-      q7.conflicts,
-      q7.handling,
-      q7.emotional,
-      q7.physical,
-      q7.respect,
-    ]
-      .map((v) => Number(v))
-      .filter((v) => Number.isFinite(v) && v >= 1 && v <= 7);
-
-    const q7Avg = avg(q7Vals);
-    scoreParts.push(q7Vals.length === 9 && q7Avg <= 3.5 ? 1 : 0);
-
-    scoreParts.push(answers.q8_divorce_considered === "No" ? 1 : 0);
-    scoreParts.push(answers.q9_divorce_talked === "No" ? 1 : 0);
-    scoreParts.push(answers.q10_committed === "Yes" ? 1 : 0);
-
-    const score = clamp(scoreParts.reduce((a, b) => a + b, 0), 0, 10);
-
-    // ---------------- Recommendations (pick top 2) ----------------
-    const weights = [];
-    function addRec(key, val, text) {
-      if (!Number.isFinite(val)) return;
-      weights.push({ key, weight: val, text });
-    }
-
-    addRec("communication", Number(q7.communication), "Improve communication 🗣️💞 (daily check-ins + “I” statements)");
-    addRec("trust", Number(q7.trust), "Rebuild trust 🤝🔒 (clear agreements + consistency)");
-    addRec("conflicts", Number(q7.conflicts), "Handle conflicts better 🧯🧩 (pause, repair, resolve)");
-    addRec("emotional", Number(q7.emotional), "Reconnect emotionally 🫶✨ (share feelings, not only facts)");
-    addRec("physical", Number(q7.physical), "Strengthen physical intimacy 💋🫂 (talk needs + plan affection)");
-    addRec("respect", Number(q7.respect), "Boost mutual respect 🙏🌱 (reduce criticism, assume good intent)");
-
-    if (answers.q8_divorce_considered === "Yes" || answers.q9_divorce_talked === "Yes") {
-      weights.push({
-        key: "therapy",
-        weight: 10,
-        text: "Consider guided support 🧑‍⚕️🧠 (couples therapy can help fast)",
-      });
-    }
-    if (answers.q10_committed === "No") {
-      weights.push({
-        key: "commitment",
-        weight: 9,
-        text: "Clarify commitment & goals 🎯❤️ (what are you willing to work on?)",
-      });
-    }
-
-    weights.sort((a, b) => b.weight - a.weight);
-
-    const recs = [];
-    const used = new Set();
-
-    for (const w of weights) {
-      if (recs.length >= 2) break;
-      if (used.has(w.key)) continue;
-
-      const isQ7Dim = ["communication", "trust", "conflicts", "emotional", "physical", "respect"].includes(w.key);
-      if (isQ7Dim && w.weight < 5) continue;
-
-      recs.push(w.text);
-      used.add(w.key);
-    }
-
-    // Ensure at least 2 always
-    const fallback = [
-      "Create a weekly relationship check-in 🗓️🫶 (30 minutes, phones away)",
-      "Use appreciation daily 🙌💗 (one specific compliment each day)",
-    ];
-    for (const f of fallback) {
-      if (recs.length >= 2) break;
-      if (!recs.includes(f)) recs.push(f);
-    }
-
-    return {
-      score,
-      q7Average: Number.isFinite(q7Avg) ? Number(q7Avg.toFixed(2)) : null,
-      recommendations: recs.slice(0, 2), // ✅ only 2
-    };
-  }
-
-  global.LovnityQuizLogic = { evaluateAssessment };
-})(window);
+  return {
+    classResults,
+    winner: classResults[0],
+    answers,
+  };
+}
