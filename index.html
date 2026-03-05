@@ -169,9 +169,7 @@
           <div class="card__head">
             <div>
               <div class="pill"><span class="pill__dot"></span> Relationship Quiz</div>
-              <p class="card__sub">
-                Use the sliders to give points for each topic. (1 = low, 10 = high)
-              </p>
+              <p class="card__sub">Use sliders to score each topic. (1 = low, 10 = high)</p>
             </div>
             <div class="chip" id="quizProgress">0 / 0</div>
           </div>
@@ -193,13 +191,12 @@
           <div class="card__head">
             <div>
               <div class="pill"><span class="pill__dot"></span> Results</div>
-              <p class="card__sub">Averages are calculated per class. Highest average wins.</p>
+              <p class="card__sub">Averages are computed per class. Highest average wins.</p>
             </div>
             <div class="chip" id="recommendChip">Recommendation</div>
           </div>
 
           <div class="resultsGrid" id="resultsGrid"></div>
-
           <div class="recommendBox" id="recommendBox"></div>
 
           <div class="actions">
@@ -228,6 +225,7 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <!-- IMPORTANT: module for imports -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
