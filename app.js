@@ -1,47 +1,27 @@
+import {
+  CLASS_META,
+  QUIZ_ITEMS,
+  SLIDER_MIN,
+  SLIDER_MAX,
+  SLIDER_STEP,
+  SLIDER_DEFAULT,
+  scoreQuiz,
+} from "./quizlogic.js";
+
 document.addEventListener("DOMContentLoaded", () => {
   const $ = (s) => document.querySelector(s);
 
   // -----------------------------
   // 1) INITIALIZE SUPABASE
   // -----------------------------
-  const supabaseUrl = "https://nytlbtwhmrvpzxqzusxg.supabase.co"; // <-- CHANGE THIS if needed
+  // NOTE: keep your existing project URL + anon key
+  const supabaseUrl = "https://nytlbtwhmrvpzxqzusxg.supabase.co"; // <-- change if needed
   const supabaseAnonKey =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dGxidHdobXJ2cHp4cXp1c3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzk2OTQsImV4cCI6MjA4NjgxNTY5NH0.mIx0MFqIHzL_zgpgLaDyImWgAAMoxRni2Nk-9iPYYzs"; // <-- CHANGE THIS if needed
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dGxidHdobXJ2cHp4cXp1c3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzk2OTQsImV4cCI6MjA4NjgxNTY5NH0.mIx0MFqIHzL_zgpgLaDyImWgAAMoxRni2Nk-9iPYYzs"; // <-- change if needed
   const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
   // -----------------------------
-  // 2) QUIZ CONFIG (PO REQUIREMENT)
-  // -----------------------------
-  // Classes:
-  // 1 - Communication
-  // 2 - Trust and Betrayal
-  // 3 - Sex and intimacy
-  const CLASS_META = {
-    1: { label: "Communication" },
-    2: { label: "Trust and Betrayal" },
-    3: { label: "Sex and intimacy" },
-  };
-
-  // Topics -> class mapping as provided
-  const QUIZ_ITEMS = [
-    { id: "communication", label: "Communication", classId: 1 },
-    { id: "everyday", label: "Everyday (household chores, responsibilities, schedules)", classId: 1 },
-    { id: "trust", label: "Trust", classId: 2 },
-    { id: "difference", label: "Difference", classId: 2 },
-    { id: "conflicts", label: "Conflicts and problems Handling", classId: 1 },
-    { id: "emotional_intimacy", label: "Emotional Intimacy", classId: 3 },
-    { id: "physical_intimacy", label: "Physical Intimacy and Sexuality", classId: 3 },
-    { id: "respect", label: "Respecting each other", classId: 1 },
-  ];
-
-  // Slider scale (you can tweak, but this is a clean “scale” UX)
-  const SLIDER_MIN = 1;
-  const SLIDER_MAX = 10;
-  const SLIDER_STEP = 1;
-  const SLIDER_DEFAULT = 5;
-
-  // -----------------------------
-  // 3) UI REFS
+  // 2) UI REFS
   // -----------------------------
   const UI = {
     panelLogin: $("#panelLogin"),
@@ -87,15 +67,15 @@ document.addEventListener("DOMContentLoaded", () => {
     restartBtn: $("#restartBtn"),
   };
 
-  // Logos live in frontend only. DB returns partner info; map partner name -> logo here.
+  // Optional: map partner name -> simple logo text (front-end only)
   const PARTNER_ASSETS = {
-    Terveystalo: { logo: `TERVEYSTALO` },
-    "Mehiläinen": { logo: `MEHILÄINEN` },
-    "Lovnity Partner": { logo: `LOVNITY` },
+    Terveystalo: { logo: "TERVEYSTALO" },
+    "Mehiläinen": { logo: "MEHILÄINEN" },
+    "Lovnity Partner": { logo: "LOVNITY" },
   };
 
   // -----------------------------
-  // 4) AUTH FLOW
+  // 3) AUTH FLOW
   // -----------------------------
   checkSession();
 
@@ -111,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
   UI.goToRegisterBtn.addEventListener("click", showRegister);
   UI.backToLoginBtn.addEventListener("click", showLogin);
 
-  // Restrict invite code to 6 digits
+  // Invite code: numeric 6 digits
   const inviteEl = $("#inviteCodeInput");
   if (inviteEl) {
     inviteEl.addEventListener("input", (e) => {
@@ -158,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     disableForm(UI.registerForm, "Creating account...");
 
-    // Pre-check code
+    // Validate invite code (assumes your DB table partner_invites exists)
     const { data: codeCheck, error: codeErr } = await supabase
       .from("partner_invites")
       .select("code")
@@ -173,7 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Register (Trigger handles rest)
+    // Register (your existing trigger handles linking business partner etc.)
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -195,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     setMsg(UI.regMsg, "Success! Logging you in...", "success");
-    await sleep(500);
+    await sleep(400);
     await fetchProfileAndShowWelcome(data.user);
   });
 
@@ -206,7 +186,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let partnerName = null;
 
     try {
-      // Ideal: fetch from DB
       const { data: profile } = await supabase
         .from("users")
         .select("last_name, business_partners(name)")
@@ -217,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
         lastName = profile.last_name || lastName;
         partnerName = profile.business_partners?.name;
       } else {
-        // Fallback: auth metadata
+        // fallback
         const meta = user.user_metadata || {};
         lastName = meta.last_name || meta.first_name || "User";
 
@@ -228,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .eq("code", meta.business_code)
             .single();
 
-          if (invite && invite.business_partners) {
+          if (invite?.business_partners?.name) {
             partnerName = invite.business_partners.name;
           }
         }
@@ -243,11 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  UI.continueBtn.addEventListener("click", () => {
-    // Start quiz immediately after welcome
-    showQuiz();
-  });
-
+  UI.continueBtn.addEventListener("click", () => showQuiz());
   UI.logoutBtn.addEventListener("click", doLogout);
   UI.logoutBtn2.addEventListener("click", doLogout);
 
@@ -261,7 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // -----------------------------
-  // 5) MODAL
+  // 4) HELP MODAL
   // -----------------------------
   UI.helpBtn.addEventListener("click", () => {
     UI.modalBackdrop.classList.remove("hidden");
@@ -278,18 +253,16 @@ document.addEventListener("DOMContentLoaded", () => {
   UI.modalBackdrop.addEventListener("click", closeHelpModal);
 
   // -----------------------------
-  // 6) QUIZ UI + LOGIC (SLIDERS)
+  // 5) QUIZ UI + STATE
   // -----------------------------
   let lastQuizAnswers = null;
 
   UI.quizBackBtn.addEventListener("click", () => {
-    // Back goes to welcome panel (not logout)
     showWelcomeOnly();
   });
 
   UI.resultsBackBtn.addEventListener("click", () => {
     showQuiz();
-    // restore sliders to last answers
     if (lastQuizAnswers) hydrateQuizAnswers(lastQuizAnswers);
   });
 
@@ -320,7 +293,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderQuiz() {
-    // Only render once per visit (but safe to re-render)
     UI.quizContainer.innerHTML = "";
 
     for (const item of QUIZ_ITEMS) {
@@ -328,14 +300,17 @@ document.addEventListener("DOMContentLoaded", () => {
       row.className = "quizRow";
       row.dataset.itemId = item.id;
 
+      const safeLabel = escapeHtml(item.label);
+      const classLabel = escapeHtml(CLASS_META[item.classId].label);
+
       row.innerHTML = `
         <div class="quizRow__top">
           <div class="quizRow__label">
-            <div class="quizRow__title">${escapeHtml(item.label)}</div>
-            <div class="quizRow__class">Class ${item.classId}: ${escapeHtml(CLASS_META[item.classId].label)}</div>
+            <div class="quizRow__title">${safeLabel}</div>
+            <div class="quizRow__class">Class ${item.classId}: ${classLabel}</div>
           </div>
 
-          <div class="quizRow__value" id="val_${escapeHtml(item.id)}">${SLIDER_DEFAULT}</div>
+          <div class="quizRow__value">${SLIDER_DEFAULT}</div>
         </div>
 
         <div class="sliderWrap">
@@ -348,7 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
             step="${SLIDER_STEP}"
             value="${SLIDER_DEFAULT}"
             name="${escapeHtml(item.id)}"
-            aria-label="${escapeHtml(item.label)}"
+            aria-label="${safeLabel}"
           />
           <span class="sliderHint">${SLIDER_MAX}</span>
         </div>
@@ -357,10 +332,10 @@ document.addEventListener("DOMContentLoaded", () => {
       UI.quizContainer.appendChild(row);
 
       const slider = row.querySelector("input.slider");
+      const valueEl = row.querySelector(".quizRow__value");
+
       slider.addEventListener("input", () => {
-        const v = Number(slider.value);
-        const valueEl = row.querySelector(`#val_${cssEscape(item.id)}`);
-        if (valueEl) valueEl.textContent = String(v);
+        valueEl.textContent = String(slider.value);
         updateProgress();
       });
     }
@@ -371,81 +346,49 @@ document.addEventListener("DOMContentLoaded", () => {
   function resetQuizToDefaults() {
     const sliders = UI.quizContainer.querySelectorAll("input.slider");
     sliders.forEach((s) => (s.value = String(SLIDER_DEFAULT)));
-    // update the numeric readouts
-    for (const item of QUIZ_ITEMS) {
-      const vEl = $(`#val_${cssEscape(item.id)}`);
+
+    // Update displayed values
+    const rows = UI.quizContainer.querySelectorAll(".quizRow");
+    rows.forEach((row) => {
+      const vEl = row.querySelector(".quizRow__value");
       if (vEl) vEl.textContent = String(SLIDER_DEFAULT);
-    }
+    });
+
     updateProgress();
   }
 
   function updateProgress() {
-    // here “progress” is just count of filled (always filled), but keeps UX consistent
     UI.quizProgress.textContent = `${QUIZ_ITEMS.length} / ${QUIZ_ITEMS.length}`;
   }
 
   function readQuizAnswers() {
     const answers = {};
-    for (const item of QUIZ_ITEMS) {
-      const slider = UI.quizContainer.querySelector(`input.slider[name="${cssEscape(item.id)}"]`);
-      answers[item.id] = slider ? Number(slider.value) : SLIDER_DEFAULT;
-    }
+    const rows = UI.quizContainer.querySelectorAll(".quizRow");
+
+    rows.forEach((row) => {
+      const id = row.dataset.itemId;
+      const slider = row.querySelector("input.slider");
+      answers[id] = slider ? Number(slider.value) : SLIDER_DEFAULT;
+    });
+
     return answers;
   }
 
   function hydrateQuizAnswers(answers) {
-    for (const item of QUIZ_ITEMS) {
-      const v = Number(answers[item.id] ?? SLIDER_DEFAULT);
-      const slider = UI.quizContainer.querySelector(`input.slider[name="${cssEscape(item.id)}"]`);
+    const rows = UI.quizContainer.querySelectorAll(".quizRow");
+
+    rows.forEach((row) => {
+      const id = row.dataset.itemId;
+      const slider = row.querySelector("input.slider");
+      const vEl = row.querySelector(".quizRow__value");
+
+      const v = Number(answers?.[id] ?? SLIDER_DEFAULT);
+
       if (slider) slider.value = String(v);
-      const vEl = $(`#val_${cssEscape(item.id)}`);
       if (vEl) vEl.textContent = String(v);
-    }
+    });
+
     updateProgress();
-  }
-
-  function scoreQuiz(answers) {
-    // Aggregate per class
-    const agg = {
-      1: { sum: 0, count: 0 },
-      2: { sum: 0, count: 0 },
-      3: { sum: 0, count: 0 },
-    };
-
-    for (const item of QUIZ_ITEMS) {
-      const v = Number(answers[item.id] ?? 0);
-      agg[item.classId].sum += v;
-      agg[item.classId].count += 1;
-    }
-
-    const classResults = Object.keys(agg).map((k) => {
-      const classId = Number(k);
-      const sum = agg[classId].sum;
-      const count = agg[classId].count;
-      const avg = count ? sum / count : 0;
-      return {
-        classId,
-        label: CLASS_META[classId].label,
-        sum,
-        count,
-        avg,
-      };
-    });
-
-    // Highest average wins (tie-breaker: higher sum, then lower classId)
-    classResults.sort((a, b) => {
-      if (b.avg !== a.avg) return b.avg - a.avg;
-      if (b.sum !== a.sum) return b.sum - a.sum;
-      return a.classId - b.classId;
-    });
-
-    const winner = classResults[0];
-
-    return {
-      classResults,
-      winner,
-      answers,
-    };
   }
 
   function showResults(result) {
@@ -453,12 +396,13 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.panelResults.classList.remove("hidden");
     UI.topSubtitle.textContent = "Your quiz results.";
 
-    // Cards for each class
+    // Display all classes in classId order
+    const ordered = result.classResults.slice().sort((a, b) => a.classId - b.classId);
+
     UI.resultsGrid.innerHTML = "";
-    for (const r of result.classResults.slice().sort((a, b) => a.classId - b.classId)) {
+    for (const r of ordered) {
       const card = document.createElement("div");
       card.className = "resultCard";
-
       card.innerHTML = `
         <div class="resultCard__title">Class ${r.classId}: ${escapeHtml(r.label)}</div>
         <div class="resultCard__meta">Sum: <strong>${r.sum}</strong> • Items: <strong>${r.count}</strong></div>
@@ -468,18 +412,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     UI.recommendChip.textContent = `Recommended: ${result.winner.label}`;
-
     UI.recommendBox.innerHTML = `
       <div class="recommendTitle">Suggested bot class</div>
       <div class="recommendMain">${escapeHtml(result.winner.label)}</div>
       <div class="recommendSub">
-        This recommendation is based on the <strong>highest average</strong> score across the 3 classes.
+        Recommendation is based on the <strong>highest average</strong> across the 3 classes.
       </div>
     `;
   }
 
   // -----------------------------
-  // 7) VIEW SWITCHING
+  // 6) VIEW SWITCHING
   // -----------------------------
   function hideAllPanels() {
     UI.panelLogin.classList.add("hidden");
@@ -523,13 +466,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const logoEl = $("#welcomeLogo");
     if (logoEl) logoEl.textContent = p.logo || "LOVNITY";
-
-    const heart = $("#welcomeHeart");
-    if (heart && p.accent) heart.style.setProperty("--heart-color", p.accent);
   }
 
   // -----------------------------
-  // 8) HELPERS
+  // 7) HELPERS
   // -----------------------------
   function setMsg(el, text, type) {
     if (!el) return;
@@ -556,6 +496,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function shake(el) {
+    if (!el) return;
     el.animate(
       [
         { transform: "translateX(0)" },
@@ -586,21 +527,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // For querySelector with ids/names that may include underscores etc.
-  function cssEscape(s) {
-    return String(s).replace(/([ #;?%&,.+*~\':"!^$[\]()=>|/@])/g, "\\$1");
-  }
-
   function attachPartnerAssets(partnerName) {
     const assets = partnerName && PARTNER_ASSETS[partnerName] ? PARTNER_ASSETS[partnerName] : {};
     return {
       name: partnerName || "Partner",
-      accent: assets.accent || "",
       logo: assets.logo || "",
     };
   }
 
   function format1(n) {
-    return (Math.round(n * 10) / 10).toFixed(1);
+    return (Math.round(Number(n) * 10) / 10).toFixed(1);
   }
 });
