@@ -281,7 +281,7 @@ body{
   .actions{ justify-content:center; }
 }
 
-/* --- LOGIN/REGISTER LAYOUT --- */
+/* LOGIN/REGISTER LAYOUT */
 .row-fields { display: flex; gap: 12px; width: 100%; }
 .half-width { flex: 1; }
 .divider { display: flex; align-items: center; text-align: center; margin: 14px 0; }
@@ -291,9 +291,7 @@ body{
 .code-style { letter-spacing: 0.25em; font-size: 18px; text-align: center; }
 .code-style::placeholder { letter-spacing: 0.25em; font-size: 16px; }
 
-/* -----------------------------
-   QUIZ + SLIDER STYLES
------------------------------- */
+/* QUIZ */
 .quizContainer{
   display:flex;
   flex-direction:column;
@@ -346,7 +344,7 @@ body{
   text-align:center;
 }
 
-/* Range input styling (cross-browser friendly) */
+/* Range styling */
 .slider{
   -webkit-appearance: none;
   appearance: none;
