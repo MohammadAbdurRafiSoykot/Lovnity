@@ -1,15 +1,55 @@
 document.addEventListener("DOMContentLoaded", () => {
   const $ = (s) => document.querySelector(s);
 
-  const supabaseUrl = "https://nytlbtwhmrvpzxqzusxg.supabase.co";
+  // -----------------------------
+  // 1) INITIALIZE SUPABASE
+  // -----------------------------
+  const supabaseUrl = "https://nytlbtwhmrvpzxqzusxg.supabase.co"; // <-- CHANGE THIS if needed
   const supabaseAnonKey =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dGxidHdobXJ2cHp4cXp1c3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzk2OTQsImV4cCI6MjA4NjgxNTY5NH0.mIx0MFqIHzL_zgpgLaDyImWgAAMoxRni2Nk-9iPYYzs";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dGxidHdobXJ2cHp4cXp1c3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzk2OTQsImV4cCI6MjA4NjgxNTY5NH0.mIx0MFqIHzL_zgpgLaDyImWgAAMoxRni2Nk-9iPYYzs"; // <-- CHANGE THIS if needed
   const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
+  // -----------------------------
+  // 2) QUIZ CONFIG (PO REQUIREMENT)
+  // -----------------------------
+  // Classes:
+  // 1 - Communication
+  // 2 - Trust and Betrayal
+  // 3 - Sex and intimacy
+  const CLASS_META = {
+    1: { label: "Communication" },
+    2: { label: "Trust and Betrayal" },
+    3: { label: "Sex and intimacy" },
+  };
+
+  // Topics -> class mapping as provided
+  const QUIZ_ITEMS = [
+    { id: "communication", label: "Communication", classId: 1 },
+    { id: "everyday", label: "Everyday (household chores, responsibilities, schedules)", classId: 1 },
+    { id: "trust", label: "Trust", classId: 2 },
+    { id: "difference", label: "Difference", classId: 2 },
+    { id: "conflicts", label: "Conflicts and problems Handling", classId: 1 },
+    { id: "emotional_intimacy", label: "Emotional Intimacy", classId: 3 },
+    { id: "physical_intimacy", label: "Physical Intimacy and Sexuality", classId: 3 },
+    { id: "respect", label: "Respecting each other", classId: 1 },
+  ];
+
+  // Slider scale (you can tweak, but this is a clean “scale” UX)
+  const SLIDER_MIN = 1;
+  const SLIDER_MAX = 10;
+  const SLIDER_STEP = 1;
+  const SLIDER_DEFAULT = 5;
+
+  // -----------------------------
+  // 3) UI REFS
+  // -----------------------------
   const UI = {
     panelLogin: $("#panelLogin"),
     panelRegister: $("#panelRegister"),
     panelWelcome: $("#panelWelcome"),
+    panelQuiz: $("#panelQuiz"),
+    panelResults: $("#panelResults"),
+
     topSubtitle: $("#topSubtitle"),
 
     loginForm: $("#loginForm"),
@@ -23,8 +63,10 @@ document.addEventListener("DOMContentLoaded", () => {
     welcomeLine: $("#welcomeLine"),
     welcomeTitle: $("#welcomeTitle"),
     welcomeCompany: $("#welcomeCompany"),
+    welcomeCompanyLine: $("#welcomeCompanyLine"),
     continueBtn: $("#continueBtn"),
     logoutBtn: $("#logoutBtn"),
+    logoutBtn2: $("#logoutBtn2"),
 
     helpBtn: $("#helpBtn"),
     helpModal: $("#helpModal"),
@@ -32,40 +74,33 @@ document.addEventListener("DOMContentLoaded", () => {
     closeModal: $("#closeModal"),
     modalOk: $("#modalOk"),
 
-    panelAssessmentIntro: $("#panelAssessmentIntro"),
-    panelAssessmentQuiz: $("#panelAssessmentQuiz"),
-    panelAssessmentResult: $("#panelAssessmentResult"),
+    quizForm: $("#quizForm"),
+    quizContainer: $("#quizContainer"),
+    quizMsg: $("#quizMsg"),
+    quizProgress: $("#quizProgress"),
+    quizBackBtn: $("#quizBackBtn"),
 
-    takeQuizBtn: $("#takeQuizBtn"),
-    skipQuizBtn: $("#skipQuizBtn"),
-
-    assessmentForm: $("#assessmentForm"),
-    assessmentMsg: $("#assessmentMsg"),
-    assessmentCancelBtn: $("#assessmentCancelBtn"),
-
-    assessmentScoreLine: $("#assessmentScoreLine"),
-    assessmentExtraLine: $("#assessmentExtraLine"),
-    assessmentRecs: $("#assessmentRecs"),
-
-    assessmentDoneBtn: $("#assessmentDoneBtn"),
-    assessmentRetakeBtn: $("#assessmentRetakeBtn"),
+    resultsGrid: $("#resultsGrid"),
+    recommendChip: $("#recommendChip"),
+    recommendBox: $("#recommendBox"),
+    resultsBackBtn: $("#resultsBackBtn"),
+    restartBtn: $("#restartBtn"),
   };
 
+  // Logos live in frontend only. DB returns partner info; map partner name -> logo here.
   const PARTNER_ASSETS = {
-    Terveystalo: { logo: ` TERVEYSTALO ` },
-    "Mehiläinen": { logo: ` MEHILÄINEN ` },
-    "Lovnity Partner": { logo: ` LOVNITY ` },
+    Terveystalo: { logo: `TERVEYSTALO` },
+    "Mehiläinen": { logo: `MEHILÄINEN` },
+    "Lovnity Partner": { logo: `LOVNITY` },
   };
 
-  let CURRENT_USER = null;
-
+  // -----------------------------
+  // 4) AUTH FLOW
+  // -----------------------------
   checkSession();
 
   async function checkSession() {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
+    const { data: { session } } = await supabase.auth.getSession();
     if (session) {
       await fetchProfileAndShowWelcome(session.user);
     } else {
@@ -76,9 +111,13 @@ document.addEventListener("DOMContentLoaded", () => {
   UI.goToRegisterBtn.addEventListener("click", showRegister);
   UI.backToLoginBtn.addEventListener("click", showLogin);
 
-  $("#inviteCodeInput").addEventListener("input", (e) => {
-    e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6);
-  });
+  // Restrict invite code to 6 digits
+  const inviteEl = $("#inviteCodeInput");
+  if (inviteEl) {
+    inviteEl.addEventListener("input", (e) => {
+      e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6);
+    });
+  }
 
   UI.loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -119,6 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     disableForm(UI.registerForm, "Creating account...");
 
+    // Pre-check code
     const { data: codeCheck, error: codeErr } = await supabase
       .from("partner_invites")
       .select("code")
@@ -133,6 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Register (Trigger handles rest)
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -140,8 +181,8 @@ document.addEventListener("DOMContentLoaded", () => {
         data: {
           first_name: firstName,
           last_name: surname,
-          age: age,
-          gender: gender,
+          age,
+          gender,
           business_code: inviteCode,
         },
       },
@@ -161,12 +202,11 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchProfileAndShowWelcome(user) {
     if (!user) return;
 
-    CURRENT_USER = user;
-
     let lastName = "User";
     let partnerName = null;
 
     try {
+      // Ideal: fetch from DB
       const { data: profile } = await supabase
         .from("users")
         .select("last_name, business_partners(name)")
@@ -177,6 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
         lastName = profile.last_name || lastName;
         partnerName = profile.business_partners?.name;
       } else {
+        // Fallback: auth metadata
         const meta = user.user_metadata || {};
         lastName = meta.last_name || meta.first_name || "User";
 
@@ -196,146 +237,31 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Profile fetch error:", err);
     }
 
-    showWelcome({ lastName, partner: attachPartnerAssets(partnerName) });
-  }
-
-  UI.continueBtn.addEventListener("click", () => {
-    showAssessmentIntro();
-  });
-
-  UI.logoutBtn.addEventListener("click", async () => {
-    await supabase.auth.signOut();
-    CURRENT_USER = null;
-    UI.loginForm.reset();
-    UI.registerForm.reset();
-    showLogin();
-  });
-
-  // -----------------------------
-  // Assessment flow
-  // -----------------------------
-  UI.takeQuizBtn.addEventListener("click", showAssessmentQuiz);
-
-  UI.skipQuizBtn.addEventListener("click", () => {
-    alert("Next: route to your main app page.");
-  });
-
-  UI.assessmentCancelBtn.addEventListener("click", () => {
-    showAssessmentIntro();
-  });
-
-  UI.assessmentRetakeBtn.addEventListener("click", () => {
-    UI.assessmentForm.reset();
-    setMsg(UI.assessmentMsg, "");
-    showAssessmentQuiz();
-  });
-
-  UI.assessmentDoneBtn.addEventListener("click", () => {
-    alert("Next: route to your main app page.");
-  });
-
-  UI.assessmentForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    setMsg(UI.assessmentMsg, "");
-
-    const answers = readAssessmentAnswers();
-    if (!answers) return;
-
-    const evaluator = window.LovnityQuizLogic?.evaluateAssessment;
-    if (typeof evaluator !== "function") {
-      setMsg(UI.assessmentMsg, "Quiz logic not loaded. Include quizLogic.js before app.js.", "error");
-      return;
-    }
-
-    const result = evaluator(answers);
-
-    // Save ONLY 2 suggestions + score
-    try {
-      const {
-        data: { user },
-        error: userErr,
-      } = await supabase.auth.getUser();
-
-      if (userErr || !user) throw userErr || new Error("Not logged in.");
-
-      const payload = {
-        user_id: user.id,
-        score: result.score,
-        recommendations: result.recommendations, // ✅ only 2
-      };
-
-      const { error: insErr } = await supabase.from("relationship_assessments").insert(payload);
-      if (insErr) throw insErr;
-    } catch (err) {
-      console.error(err);
-      setMsg(UI.assessmentMsg, "Could not save result to backend. Showing your result anyway.", "error");
-    }
-
-    renderAssessmentResult(result);
-    showAssessmentResult();
-  });
-
-  function readAssessmentAnswers() {
-    const get = (id) => $(id)?.value?.trim();
-
-    const q7 = {
-      communication: Number(get("#q7_communication")),
-      everyday: Number(get("#q7_everyday")),
-      trust: Number(get("#q7_trust")),
-      differences: Number(get("#q7_differences")),
-      conflicts: Number(get("#q7_conflicts")),
-      handling: Number(get("#q7_handling")),
-      emotional: Number(get("#q7_emotional")),
-      physical: Number(get("#q7_physical")),
-      respect: Number(get("#q7_respect")),
-    };
-
-    for (const [k, v] of Object.entries(q7)) {
-      if (!Number.isFinite(v) || v < 1 || v > 7) {
-        setMsg(UI.assessmentMsg, `Question 7: "${k}" must be a number 1–7.`, "error");
-        return null;
-      }
-    }
-
-    const answers = {
-      q1_gender: get("#q1_gender"),
-      q2_age: get("#q2_age"),
-      q3_live: get("#q3_live"),
-      q4_type: get("#q4_type"),
-      q5_together: get("#q5_together"),
-      q6_difficulties: get("#q6_difficulties"),
-      q7,
-      q8_divorce_considered: get("#q8_divorce_considered"),
-      q9_divorce_talked: get("#q9_divorce_talked"),
-      q10_committed: get("#q10_committed"),
-    };
-
-    for (const [k, v] of Object.entries(answers)) {
-      if (k === "q7") continue;
-      if (!v) {
-        setMsg(UI.assessmentMsg, "Please answer all questions before submitting.", "error");
-        return null;
-      }
-    }
-
-    return answers;
-  }
-
-  function renderAssessmentResult(result) {
-    UI.assessmentScoreLine.textContent = `Your "relationship aspects": ${result.score} / 10 🧾`;
-    UI.assessmentExtraLine.textContent =
-      result.q7Average != null ? `(Q7 average: ${result.q7Average} on 1–7 scale)` : "";
-
-    UI.assessmentRecs.innerHTML = "";
-    (result.recommendations || []).slice(0, 2).forEach((r) => {
-      const li = document.createElement("li");
-      li.textContent = r;
-      UI.assessmentRecs.appendChild(li);
+    showWelcome({
+      lastName,
+      partner: attachPartnerAssets(partnerName),
     });
   }
 
+  UI.continueBtn.addEventListener("click", () => {
+    // Start quiz immediately after welcome
+    showQuiz();
+  });
+
+  UI.logoutBtn.addEventListener("click", doLogout);
+  UI.logoutBtn2.addEventListener("click", doLogout);
+
+  async function doLogout() {
+    await supabase.auth.signOut();
+    UI.loginForm.reset();
+    UI.registerForm.reset();
+    setMsg(UI.loginMsg, "");
+    setMsg(UI.regMsg, "");
+    showLogin();
+  }
+
   // -----------------------------
-  // Modals
+  // 5) MODAL
   // -----------------------------
   UI.helpBtn.addEventListener("click", () => {
     UI.modalBackdrop.classList.remove("hidden");
@@ -352,15 +278,215 @@ document.addEventListener("DOMContentLoaded", () => {
   UI.modalBackdrop.addEventListener("click", closeHelpModal);
 
   // -----------------------------
-  // Views
+  // 6) QUIZ UI + LOGIC (SLIDERS)
+  // -----------------------------
+  let lastQuizAnswers = null;
+
+  UI.quizBackBtn.addEventListener("click", () => {
+    // Back goes to welcome panel (not logout)
+    showWelcomeOnly();
+  });
+
+  UI.resultsBackBtn.addEventListener("click", () => {
+    showQuiz();
+    // restore sliders to last answers
+    if (lastQuizAnswers) hydrateQuizAnswers(lastQuizAnswers);
+  });
+
+  UI.restartBtn.addEventListener("click", () => {
+    lastQuizAnswers = null;
+    showQuiz();
+    resetQuizToDefaults();
+  });
+
+  UI.quizForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    setMsg(UI.quizMsg, "");
+
+    const answers = readQuizAnswers();
+    lastQuizAnswers = answers;
+
+    const result = scoreQuiz(answers);
+    showResults(result);
+  });
+
+  function showQuiz() {
+    hideAllPanels();
+    UI.panelQuiz.classList.remove("hidden");
+    UI.topSubtitle.textContent = "Quiz: slide to score each topic.";
+
+    renderQuiz();
+    resetQuizToDefaults();
+  }
+
+  function renderQuiz() {
+    // Only render once per visit (but safe to re-render)
+    UI.quizContainer.innerHTML = "";
+
+    for (const item of QUIZ_ITEMS) {
+      const row = document.createElement("div");
+      row.className = "quizRow";
+      row.dataset.itemId = item.id;
+
+      row.innerHTML = `
+        <div class="quizRow__top">
+          <div class="quizRow__label">
+            <div class="quizRow__title">${escapeHtml(item.label)}</div>
+            <div class="quizRow__class">Class ${item.classId}: ${escapeHtml(CLASS_META[item.classId].label)}</div>
+          </div>
+
+          <div class="quizRow__value" id="val_${escapeHtml(item.id)}">${SLIDER_DEFAULT}</div>
+        </div>
+
+        <div class="sliderWrap">
+          <span class="sliderHint">${SLIDER_MIN}</span>
+          <input
+            class="slider"
+            type="range"
+            min="${SLIDER_MIN}"
+            max="${SLIDER_MAX}"
+            step="${SLIDER_STEP}"
+            value="${SLIDER_DEFAULT}"
+            name="${escapeHtml(item.id)}"
+            aria-label="${escapeHtml(item.label)}"
+          />
+          <span class="sliderHint">${SLIDER_MAX}</span>
+        </div>
+      `;
+
+      UI.quizContainer.appendChild(row);
+
+      const slider = row.querySelector("input.slider");
+      slider.addEventListener("input", () => {
+        const v = Number(slider.value);
+        const valueEl = row.querySelector(`#val_${cssEscape(item.id)}`);
+        if (valueEl) valueEl.textContent = String(v);
+        updateProgress();
+      });
+    }
+
+    updateProgress();
+  }
+
+  function resetQuizToDefaults() {
+    const sliders = UI.quizContainer.querySelectorAll("input.slider");
+    sliders.forEach((s) => (s.value = String(SLIDER_DEFAULT)));
+    // update the numeric readouts
+    for (const item of QUIZ_ITEMS) {
+      const vEl = $(`#val_${cssEscape(item.id)}`);
+      if (vEl) vEl.textContent = String(SLIDER_DEFAULT);
+    }
+    updateProgress();
+  }
+
+  function updateProgress() {
+    // here “progress” is just count of filled (always filled), but keeps UX consistent
+    UI.quizProgress.textContent = `${QUIZ_ITEMS.length} / ${QUIZ_ITEMS.length}`;
+  }
+
+  function readQuizAnswers() {
+    const answers = {};
+    for (const item of QUIZ_ITEMS) {
+      const slider = UI.quizContainer.querySelector(`input.slider[name="${cssEscape(item.id)}"]`);
+      answers[item.id] = slider ? Number(slider.value) : SLIDER_DEFAULT;
+    }
+    return answers;
+  }
+
+  function hydrateQuizAnswers(answers) {
+    for (const item of QUIZ_ITEMS) {
+      const v = Number(answers[item.id] ?? SLIDER_DEFAULT);
+      const slider = UI.quizContainer.querySelector(`input.slider[name="${cssEscape(item.id)}"]`);
+      if (slider) slider.value = String(v);
+      const vEl = $(`#val_${cssEscape(item.id)}`);
+      if (vEl) vEl.textContent = String(v);
+    }
+    updateProgress();
+  }
+
+  function scoreQuiz(answers) {
+    // Aggregate per class
+    const agg = {
+      1: { sum: 0, count: 0 },
+      2: { sum: 0, count: 0 },
+      3: { sum: 0, count: 0 },
+    };
+
+    for (const item of QUIZ_ITEMS) {
+      const v = Number(answers[item.id] ?? 0);
+      agg[item.classId].sum += v;
+      agg[item.classId].count += 1;
+    }
+
+    const classResults = Object.keys(agg).map((k) => {
+      const classId = Number(k);
+      const sum = agg[classId].sum;
+      const count = agg[classId].count;
+      const avg = count ? sum / count : 0;
+      return {
+        classId,
+        label: CLASS_META[classId].label,
+        sum,
+        count,
+        avg,
+      };
+    });
+
+    // Highest average wins (tie-breaker: higher sum, then lower classId)
+    classResults.sort((a, b) => {
+      if (b.avg !== a.avg) return b.avg - a.avg;
+      if (b.sum !== a.sum) return b.sum - a.sum;
+      return a.classId - b.classId;
+    });
+
+    const winner = classResults[0];
+
+    return {
+      classResults,
+      winner,
+      answers,
+    };
+  }
+
+  function showResults(result) {
+    hideAllPanels();
+    UI.panelResults.classList.remove("hidden");
+    UI.topSubtitle.textContent = "Your quiz results.";
+
+    // Cards for each class
+    UI.resultsGrid.innerHTML = "";
+    for (const r of result.classResults.slice().sort((a, b) => a.classId - b.classId)) {
+      const card = document.createElement("div");
+      card.className = "resultCard";
+
+      card.innerHTML = `
+        <div class="resultCard__title">Class ${r.classId}: ${escapeHtml(r.label)}</div>
+        <div class="resultCard__meta">Sum: <strong>${r.sum}</strong> • Items: <strong>${r.count}</strong></div>
+        <div class="resultCard__avg">Average: <strong>${format1(r.avg)}</strong></div>
+      `;
+      UI.resultsGrid.appendChild(card);
+    }
+
+    UI.recommendChip.textContent = `Recommended: ${result.winner.label}`;
+
+    UI.recommendBox.innerHTML = `
+      <div class="recommendTitle">Suggested bot class</div>
+      <div class="recommendMain">${escapeHtml(result.winner.label)}</div>
+      <div class="recommendSub">
+        This recommendation is based on the <strong>highest average</strong> score across the 3 classes.
+      </div>
+    `;
+  }
+
+  // -----------------------------
+  // 7) VIEW SWITCHING
   // -----------------------------
   function hideAllPanels() {
     UI.panelLogin.classList.add("hidden");
     UI.panelRegister.classList.add("hidden");
     UI.panelWelcome.classList.add("hidden");
-    UI.panelAssessmentIntro.classList.add("hidden");
-    UI.panelAssessmentQuiz.classList.add("hidden");
-    UI.panelAssessmentResult.classList.add("hidden");
+    UI.panelQuiz.classList.add("hidden");
+    UI.panelResults.classList.add("hidden");
   }
 
   function showLogin() {
@@ -377,6 +503,12 @@ document.addEventListener("DOMContentLoaded", () => {
     setMsg(UI.regMsg, "");
   }
 
+  function showWelcomeOnly() {
+    hideAllPanels();
+    UI.panelWelcome.classList.remove("hidden");
+    UI.topSubtitle.textContent = "You're all set.";
+  }
+
   function showWelcome(profile) {
     hideAllPanels();
     UI.panelWelcome.classList.remove("hidden");
@@ -385,38 +517,19 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.topSubtitle.textContent = "You're all set.";
     UI.welcomeLine.textContent = "Authentication successful.";
     UI.welcomeTitle.textContent = `Welcome, ${escapeHtml(profile.lastName)}! 💗`;
+
     UI.welcomeCompany.textContent = p.name ? `Greetings from ${p.name}` : "Greetings from Partner";
-    UI.welcomeCompany.style.color = p.accent || "";
+    UI.welcomeCompanyLine.textContent = p.name ? `You are connected via ${p.name}.` : "";
 
     const logoEl = $("#welcomeLogo");
-    if (logoEl) logoEl.innerHTML = p.logo || "";
+    if (logoEl) logoEl.textContent = p.logo || "LOVNITY";
 
     const heart = $("#welcomeHeart");
     if (heart && p.accent) heart.style.setProperty("--heart-color", p.accent);
   }
 
-  function showAssessmentIntro() {
-    hideAllPanels();
-    UI.panelAssessmentIntro.classList.remove("hidden");
-    UI.topSubtitle.textContent = "Before you continue…";
-    setMsg(UI.assessmentMsg, "");
-  }
-
-  function showAssessmentQuiz() {
-    hideAllPanels();
-    UI.panelAssessmentQuiz.classList.remove("hidden");
-    UI.topSubtitle.textContent = "Relationship assessment";
-    setMsg(UI.assessmentMsg, "");
-  }
-
-  function showAssessmentResult() {
-    hideAllPanels();
-    UI.panelAssessmentResult.classList.remove("hidden");
-    UI.topSubtitle.textContent = "Your assessment result";
-  }
-
   // -----------------------------
-  // Helpers
+  // 8) HELPERS
   // -----------------------------
   function setMsg(el, text, type) {
     if (!el) return;
@@ -443,7 +556,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function shake(el) {
-    if (!el?.animate) return;
     el.animate(
       [
         { transform: "translateX(0)" },
@@ -462,11 +574,33 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    return String(s).replace(/[&<>"']/g, (c) => {
+      const map = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+      };
+      return map[c] || c;
+    });
+  }
+
+  // For querySelector with ids/names that may include underscores etc.
+  function cssEscape(s) {
+    return String(s).replace(/([ #;?%&,.+*~\':"!^$[\]()=>|/@])/g, "\\$1");
   }
 
   function attachPartnerAssets(partnerName) {
     const assets = partnerName && PARTNER_ASSETS[partnerName] ? PARTNER_ASSETS[partnerName] : {};
-    return { name: partnerName || "Partner", accent: assets.accent || "", logo: assets.logo || "" };
+    return {
+      name: partnerName || "Partner",
+      accent: assets.accent || "",
+      logo: assets.logo || "",
+    };
+  }
+
+  function format1(n) {
+    return (Math.round(n * 10) / 10).toFixed(1);
   }
 });
