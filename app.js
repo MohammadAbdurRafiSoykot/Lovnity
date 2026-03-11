@@ -272,7 +272,8 @@ document.addEventListener("DOMContentLoaded", () => {
     resetQuizToDefaults();
   });
 
-  UI.quizForm.addEventListener("submit", (e) => {
+// CHANGED: Added 'async' to the event listener
+  UI.quizForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     setMsg(UI.quizMsg, "");
 
@@ -280,8 +281,50 @@ document.addEventListener("DOMContentLoaded", () => {
     lastQuizAnswers = answers;
 
     const result = scoreQuiz(answers);
+   
+    //quiz integration with Database
+    // 1. Show the results immediately so the user isn't waiting
     showResults(result);
+
+    // 2. Save to Supabase securely in the background
+    await saveQuizToDatabase(answers, result);
   });
+
+  // NEW FUNCTION: Sends the data to Supabase
+  async function saveQuizToDatabase(answers, result) {
+    try {
+      // Get the currently logged-in user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return; // Not logged in, do nothing
+
+      // Format the class results to drop unnecessary data if needed, 
+      // or just save the whole array
+      const classAverages = result.classResults.map(r => ({
+        classId: r.classId,
+        label: r.label,
+        avg: r.avg
+      }));
+
+      // Insert into the database
+      const { error } = await supabase
+        .from('quiz_results')
+        .insert({
+          user_id: user.id,
+          answers: answers,
+          class_averages: classAverages,
+          recommended_class: result.winner.label
+        });
+
+      if (error) {
+        console.error("Failed to save quiz results:", error.message);
+      } else {
+        console.log("Quiz results saved successfully!");
+      }
+    } catch (err) {
+      console.error("Database connection error:", err);
+    }
+  }
+  //Quiz Integration end
 
   function showQuiz() {
     hideAllPanels();
