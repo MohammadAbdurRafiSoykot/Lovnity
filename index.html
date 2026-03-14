@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Lovnity</title>
   <link rel="stylesheet" href="styles.css" />
-
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -29,14 +28,12 @@
           <h1 class="top__h1">Welcome to LOVNITY</h1>
           <p class="top__p" id="topSubtitle">Sign in to your account.</p>
         </div>
-
-        <button class="helpbtn" id="helpBtn" type="button" aria-label="Help">
-          ?
-        </button>
+        <button class="helpbtn" id="helpBtn" type="button" aria-label="Help">?</button>
       </header>
 
       <section class="stage">
-        <!-- LOGIN PANEL -->
+
+        <!-- ── LOGIN PANEL ── -->
         <div class="card card--light" id="panelLogin">
           <div class="card__head">
             <div>
@@ -51,27 +48,46 @@
               <label class="label" for="loginEmail">Email</label>
               <input class="input" id="loginEmail" type="email" autocomplete="email" required />
             </div>
-
             <div class="field">
               <label class="label" for="loginPassword">Password</label>
               <input class="input" id="loginPassword" type="password" autocomplete="current-password" required />
             </div>
-
-            <div class="actions center-actions">
+            <div class="actions center-actions login-btn-group">
               <button class="btn btn--primary full-width" type="submit">Log In</button>
-            </div>
-
-            <div class="msg" id="loginMsg"></div>
-
-            <div class="divider"><span>or</span></div>
-
-            <div class="actions center-actions">
               <button class="btn btn--ghost full-width" id="goToRegisterBtn" type="button">Create an account</button>
             </div>
+            <div class="msg" id="loginMsg"></div>
           </form>
+
+          <!-- ── Partner invite section ── -->
+          <div class="divider"><span>or join your partner</span></div>
+
+          <div class="invitePartnerBox">
+            <div class="invitePartnerBox__head">
+              <span class="invitePartnerBox__icon">💌</span>
+              <div>
+                <p class="invitePartnerBox__title">Partner invite code?</p>
+                <p class="invitePartnerBox__sub">Your partner has already registered and shared a 6-digit code with you. Enter it here to create your account and join them.</p>
+              </div>
+            </div>
+            <label class="label" for="invitePartnerInput">Partner's invite code</label>
+            <div class="row">
+              <input
+                id="invitePartnerInput"
+                class="input code-style"
+                inputmode="numeric"
+                maxlength="6"
+                placeholder="______"
+                autocomplete="off"
+              />
+              <button class="btn btn--invite" id="invitePartnerBtn" type="button">Join →</button>
+            </div>
+            <div class="msg" id="invitePartnerMsg"></div>
+          </div>
+          <!-- ── End partner invite ── -->
         </div>
 
-        <!-- REGISTER PANEL -->
+        <!-- ── REGISTER PANEL ── -->
         <div class="card card--light hidden" id="panelRegister">
           <div class="card__head">
             <div>
@@ -87,7 +103,6 @@
                 <label class="label" for="firstNameInput">First Name</label>
                 <input class="input" id="firstNameInput" type="text" autocomplete="given-name" required />
               </div>
-
               <div class="field half-width">
                 <label class="label" for="surnameInput">Surname</label>
                 <input class="input" id="surnameInput" type="text" autocomplete="family-name" required />
@@ -105,7 +120,6 @@
                   <option value="Prefer not to say">Prefer not to say</option>
                 </select>
               </div>
-
               <div class="field half-width">
                 <label class="label" for="ageInput">Age</label>
                 <input class="input" id="ageInput" type="number" min="18" max="120" required />
@@ -131,12 +145,11 @@
               <button class="btn btn--ghost" id="backToLoginBtn" type="button">Back</button>
               <button class="btn btn--primary" type="submit">Sign Up</button>
             </div>
-
             <div class="msg" id="regMsg"></div>
           </form>
         </div>
 
-        <!-- WELCOME PANEL -->
+        <!-- ── WELCOME PANEL ── -->
         <div class="card card--light hidden" id="panelWelcome">
           <div class="card__head">
             <div>
@@ -145,64 +158,91 @@
             </div>
             <div class="chip" id="welcomeCompany">LOVNITY</div>
           </div>
-
           <div class="welcome">
             <div class="welcome__heartWrap">
               <div class="welcome__heart" id="welcomeHeart"></div>
               <div class="welcome__logoCenter" id="welcomeLogo">LOVNITY</div>
             </div>
-
             <div class="welcome__text">
               <h2 class="welcome__h2" id="welcomeTitle">Welcome 💗</h2>
               <p class="welcome__company" id="welcomeCompanyLine"></p>
             </div>
-
             <div class="actions center-actions">
               <button class="btn btn--primary full-width" id="continueBtn" type="button">Continue to Quiz</button>
-              <button class="btn btn--ghost full-width" id="logoutBtn" type="button">Log Out</button>
+              <button class="btn btn--ghost   full-width" id="logoutBtn"   type="button">Log Out</button>
             </div>
           </div>
         </div>
 
-        <!-- QUIZ PANEL -->
+        <!-- ── QUIZ PANEL ── -->
         <div class="card card--light hidden" id="panelQuiz">
           <div class="card__head">
             <div>
               <div class="pill"><span class="pill__dot"></span> Relationship Quiz</div>
-              <p class="card__sub">Use sliders to score each topic. (1 = low, 10 = high)</p>
+              <p class="card__sub">Rate each topic honestly. Lower score = more to work on.</p>
             </div>
             <div class="chip" id="quizProgress">0 / 0</div>
           </div>
-
           <form class="form" id="quizForm">
             <div id="quizContainer" class="quizContainer"></div>
-
             <div class="actions">
-              <button class="btn btn--ghost" id="quizBackBtn" type="button">Back</button>
+              <button class="btn btn--ghost"   id="quizBackBtn"   type="button">Back</button>
               <button class="btn btn--primary" id="quizSubmitBtn" type="submit">See Results</button>
             </div>
-
             <div class="msg" id="quizMsg"></div>
           </form>
         </div>
 
-        <!-- RESULTS PANEL -->
+        <!-- ── RESULTS PANEL ── -->
         <div class="card card--light hidden" id="panelResults">
           <div class="card__head">
             <div>
               <div class="pill"><span class="pill__dot"></span> Results</div>
-              <p class="card__sub">Averages are computed per class. Highest average wins.</p>
+              <p class="card__sub">Lower average = more to work on. Highest average = strongest area.</p>
             </div>
-            <div class="chip" id="recommendChip">Recommendation</div>
+            <div class="chip" id="recommendChip">Focus area</div>
           </div>
-
-          <div class="resultsGrid" id="resultsGrid"></div>
+          <div class="resultsGrid"  id="resultsGrid"></div>
           <div class="recommendBox" id="recommendBox"></div>
-
           <div class="actions">
-            <button class="btn btn--ghost" id="resultsBackBtn" type="button">Back to Quiz</button>
-            <button class="btn btn--primary" id="restartBtn" type="button">Restart Quiz</button>
-            <button class="btn btn--ghost" id="logoutBtn2" type="button">Log Out</button>
+            <button class="btn btn--ghost"   id="resultsBackBtn" type="button">Back to Quiz</button>
+            <button class="btn btn--primary" id="chatWithAIBtn"  type="button">💬 Chat with AI</button>
+            <button class="btn btn--primary" id="restartBtn"     type="button">Restart Quiz</button>
+            <button class="btn btn--ghost"   id="logoutBtn2"     type="button">Log Out</button>
+          </div>
+        </div>
+
+        <!-- ── CHATBOT PANEL ── -->
+        <div class="card card--light hidden" id="panelChat">
+          <div class="card__head">
+            <div>
+              <div class="pill"><span class="pill__dot pill__dot--active"></span> Lovnity AI</div>
+              <p class="card__sub">Your personal relationship companion</p>
+            </div>
+            <div class="chip chip--ai">AI Chat</div>
+          </div>
+          <div class="chatWindow" id="chatWindow" aria-live="polite"></div>
+          <div class="emotionChips hidden" id="emotionChips"></div>
+          <div class="chatInputRow" id="chatInputRow">
+            <input
+              class="chatInput" id="chatInput" type="text"
+              placeholder="Type a message… (type END to finish)"
+              autocomplete="off"
+            />
+            <button class="chatSendBtn" id="chatSendBtn" type="button" aria-label="Send">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+          <div class="chatEndedBox hidden" id="chatEndedBox">
+            <div class="chatEndedTitle">💬 Conversation Summary</div>
+            <div class="chatSummaryText" id="chatSummaryText"></div>
+            <div class="actions center-actions" style="margin-top:16px;">
+              <button class="btn btn--primary full-width" id="chatRestartBtn" type="button">Take Quiz Again</button>
+              <button class="btn btn--ghost   full-width" id="chatLogoutBtn"  type="button">Log Out</button>
+            </div>
           </div>
         </div>
 
@@ -219,13 +259,13 @@
     </div>
     <p class="modal__text">
       To create an account, you will need a 6-digit invitation code provided by the business partners.
+      If your partner has already registered, they can share their partner invite code with you — enter it on the login page to join them.
     </p>
     <div class="actions">
       <button class="btn btn--primary" id="modalOk" type="button">Got it</button>
     </div>
   </div>
 
-  <!-- IMPORTANT: module for imports -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
