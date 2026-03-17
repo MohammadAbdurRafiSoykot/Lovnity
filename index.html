@@ -75,10 +75,11 @@
               <input
                 id="invitePartnerInput"
                 class="input code-style"
-                inputmode="numeric"
+                type="text"
                 maxlength="6"
                 placeholder="______"
                 autocomplete="off"
+                spellcheck="false"
               />
               <button class="btn btn--invite" id="invitePartnerBtn" type="button">Join →</button>
             </div>
@@ -137,8 +138,8 @@
             </div>
 
             <div class="field highlight-field">
-              <label class="label" for="inviteCodeInput">Business Invite Code (6 Digits)</label>
-              <input class="input code-style" id="inviteCodeInput" inputmode="numeric" placeholder="______" required />
+              <label class="label" for="inviteCodeInput">Business Invite Code (6 Characters)</label>
+              <input class="input code-style" id="inviteCodeInput" type="text" maxlength="6" placeholder="______" autocomplete="off" spellcheck="false" required />
             </div>
 
             <div class="actions">

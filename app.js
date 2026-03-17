@@ -97,18 +97,18 @@ document.addEventListener("DOMContentLoaded", () => {
   UI.goToRegisterBtn.addEventListener("click", showRegister);
   UI.backToLoginBtn.addEventListener("click",  showLogin);
 
-  // Business code input — digits only
+  // Business invite code input — alphanumeric only (e.g. 253fe3)
   const inviteEl = $("#inviteCodeInput");
   if (inviteEl) {
     inviteEl.addEventListener("input", (e) => {
-      e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6);
+      e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6);
     });
   }
 
-  // Partner invite code input — digits only
+  // Partner invite code input — alphanumeric only (e.g. 253fe3)
   if (invitePartnerInput) {
     invitePartnerInput.addEventListener("input", (e) => {
-      e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6);
+      e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6);
     });
   }
 
@@ -140,24 +140,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const inviteCode = $("#inviteCodeInput").value.trim();
 
     if (inviteCode.length !== 6) {
-      setMsg(UI.regMsg, "Invite code must be exactly 6 digits.", "error");
+      setMsg(UI.regMsg, "Invite code must be exactly 6 characters.", "error");
       return;
     }
 
     disableForm(UI.registerForm, "Creating account...");
 
-    const { data: codeCheck, error: codeErr } = await supabase
-      .from("partner_invites")
-      .select("code")
-      .eq("code", inviteCode)
-      .eq("is_used", false)
-      .single();
+    // Check if this is a partner join (code exists in users.couple_code)
+    const { data: isPartnerCode } = await supabase
+      .rpc("check_couple_code", { input_code: inviteCode.toLowerCase() });
 
-    if (codeErr || !codeCheck) {
-      enableForm(UI.registerForm, "Sign Up");
-      setMsg(UI.regMsg, "Invalid or already used invite code.", "error");
-      shake(UI.panelRegister);
-      return;
+    // If not a partner code, validate against partner_invites (normal business signup)
+    if (!isPartnerCode) {
+      const { data: bizCheck, error: bizErr } = await supabase
+        .rpc("check_business_code", { input_code: inviteCode.toLowerCase() });
+      if (bizErr || !bizCheck) {
+        enableForm(UI.registerForm, "Sign Up");
+        setMsg(UI.regMsg, "Invalid or already used invite code.", "error");
+        shake(UI.panelRegister);
+        return;
+      }
     }
 
     const { data, error } = await supabase.auth.signUp({
@@ -169,7 +171,8 @@ document.addEventListener("DOMContentLoaded", () => {
           last_name:     surname,
           age,
           gender,
-          business_code: inviteCode,
+          business_code: inviteCode.toLowerCase(),
+          is_partner_join: isPartnerCode ? true : false,
         },
       },
     });
@@ -199,10 +202,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function submitPartnerInvite() {
     if (!invitePartnerInput || !invitePartnerMsg) return;
-    const code = invitePartnerInput.value.trim();
+
+    const code = invitePartnerInput.value.trim().toLowerCase();
 
     if (code.length !== 6) {
-      setMsg(invitePartnerMsg, "Please enter a 6-digit partner invite code.", "error");
+      setMsg(invitePartnerMsg, "Please enter a 6-character partner invite code.", "error");
       return;
     }
 
@@ -212,23 +216,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // TODO (backend): validate against partner_invites table
-      // Expected response: { status: "valid", partner_name: "Alex" }
-      //                 or { status: "invalid" }
-      //                 or { status: "already_used" }
-      const { data: codeCheck, error: codeErr } = await supabase
-        .from("partner_invites")
-        .select("code, business_partners(name)")
-        .eq("code", code)
-        .eq("is_used", false)
-        .single();
+      // Uses an RPC function that runs as SECURITY DEFINER (bypasses RLS)
+      // Run this SQL once in Supabase SQL Editor:
+      //
+      //   create or replace function check_couple_code(input_code text)
+      //   returns boolean
+      //   language sql
+      //   security definer
+      //   as $$
+      //     select exists (
+      //       select 1 from users where couple_code = input_code
+      //     );
+      //   $$;
+      //
+      const { data: isValid, error: rpcErr } = await supabase
+        .rpc("check_couple_code", { input_code: code });
+
+      console.log("Partner code RPC result:", { isValid, rpcErr });
 
       if (invitePartnerBtn) {
         invitePartnerBtn.disabled    = false;
         invitePartnerBtn.textContent = "Join →";
       }
 
-      if (codeErr || !codeCheck) {
+      if (rpcErr || !isValid) {
         setMsg(invitePartnerMsg, "Partner invite code not recognised. Please check the code.", "error");
         if (invitePartnerInput.closest) shake(invitePartnerInput.closest(".invitePartnerBox") || invitePartnerInput);
         return;
@@ -240,26 +251,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
       showRegister();
 
-      // Pre-fill the business invite code field with the partner code
+      // Pre-fill AND lock the business invite code field
       const inviteCodeField = $("#inviteCodeInput");
       if (inviteCodeField) {
         inviteCodeField.value    = code;
-        inviteCodeField.readOnly = true; // lock it so they can't change it
+        inviteCodeField.readOnly = true;
       }
 
-      // Update the register banner to make it clear this is a partner join
-      const partnerName = codeCheck.business_partners?.name || "your partner";
-      setMsg(UI.regMsg,
-        `💌 Joining as partner — your invite code has been filled in automatically.`,
-        "success"
-      );
+      setMsg(UI.regMsg, "💌 Joining your partner — your code has been filled in automatically.", "success");
 
     } catch (err) {
+      console.error("submitPartnerInvite error:", err);
       if (invitePartnerBtn) {
         invitePartnerBtn.disabled    = false;
         invitePartnerBtn.textContent = "Join →";
       }
-      // Demo fallback when server isn't running
       setMsg(invitePartnerMsg, "Could not verify code right now — try again shortly.", "error");
     }
   }
