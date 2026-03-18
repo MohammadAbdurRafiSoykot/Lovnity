@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const { data: isPartnerCode } = await supabase
       .rpc("check_couple_code", { input_code: inviteCode.toLowerCase() });
 
-    // If not a partner code, validate against partner_invites (normal business signup)
+    // If not a partner code, validate against business_invites (normal business signup)
     if (!isPartnerCode) {
       const { data: bizCheck, error: bizErr } = await supabase
         .rpc("check_business_code", { input_code: inviteCode.toLowerCase() });
@@ -289,7 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
         lastName   = meta.last_name || meta.first_name || "User";
         if (meta.business_code) {
           const { data: invite } = await supabase
-            .from("partner_invites")
+            .from("business_invites")
             .select("business_partners(name)")
             .eq("code", meta.business_code)
             .single();

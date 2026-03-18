@@ -177,16 +177,73 @@ function localFallback(messages, quizResult) {
   return defaults[Math.floor(Math.random() * defaults.length)];
 }
 
-// Supabase save stub
+
+// Supabase save function matching the new ERD
 async function saveChatSession(supabase, userId, { messages, summary, quizResult }) {
   if (!supabase || !userId) return;
+
+  try {
+    // 1. 生成一个唯一的 session_id 
+    // 使用浏览器的 crypto API 生成 UUID，用来关联 session 和 messages
+    const sessionId = crypto.randomUUID();
+
+    // 2. 准备插入 coaching_sessions 表的数据
+    // DB 中的 quiz_score 是 int4，我们需要把平均分转成整数
+    const overallAvg = quizResult.classResults.reduce((s, r) => s + r.avg, 0) / quizResult.classResults.length;
+    const roundedScore = Math.round(overallAvg); 
+    
+    // 从 quizResult 中提取最需要关注的领域作为 problem_area
+    const problemArea = quizResult.winner.label;
+
+    const sessionData = {
+      session_id: sessionId,
+      user_id: userId,
+      final_feedback: summary,       // 将生成的长总结存入 feedback
+      quiz_score: roundedScore,      // 存入四舍五入后的整数分数
+      problem_area: problemArea,     // 对应关系图中的 problem_area
+      turn_count: messages.length,   // 对话回合数
+      // suggested_next_steps 和 key_insight 暂时留空，或者你可以让 AI 生成专门的字段
+    };
+
+    // 3. 准备批量插入 chat_messages 表的数据
+    // 遍历 messages 数组，将每一条对象映射为数据库需要的格式
+    const messagesToInsert = messages.map(msg => ({
+      session_id: sessionId,
+      user_id: userId,
+      role: msg.role,
+      content: msg.content
+    }));
+
+    // 4. 执行数据库插入 (先插 session，再插 messages)
+    const { error: sessionError } = await supabase
+      .from("coaching_sessions")
+      .insert(sessionData);
+
+    if (sessionError) throw new Error(`Session Insert Error: ${sessionError.message}`);
+
+    const { error: messagesError } = await supabase
+      .from("chat_messages")
+      .insert(messagesToInsert);
+
+    if (messagesError) throw new Error(`Messages Insert Error: ${messagesError.message}`);
+
+    console.log("✅ Chat session and messages successfully saved to Supabase!");
+
+  } catch (err) {
+    console.error("❌ Failed to save chat session data:", err);
+  }
+}
+
+// Supabase save stub
+//async function saveChatSession(supabase, userId, { messages, summary, quizResult }) {
+ // if (!supabase || !userId) return;
   // TODO (Supabase teammate): create table chat_sessions and uncomment:
   // const { error } = await supabase.from("chat_sessions").insert({
   //   user_id: userId, messages, summary, quiz_result: quizResult,
   // });
   // if (error) console.error("Failed to save chat session:", error.message);
-  console.log("[chatbot.js] saveChatSession stub — wire Supabase here.", { userId });
-}
+ // console.log("[chatbot.js] saveChatSession stub — wire Supabase here.", { userId });
+//}
 
 // ══════════════════════════════════════════════════════════════
 // initChatbot — exported, called once from app.js
