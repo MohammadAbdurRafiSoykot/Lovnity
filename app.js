@@ -7,7 +7,6 @@ import {
   SLIDER_DEFAULT,
   scoreQuiz,
 } from "./quizLogic.js";
-
 import { initChatbot } from "./chatbot.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -16,128 +15,182 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------------
   // 1) INITIALIZE SUPABASE
   // -----------------------------
-  const supabaseUrl     = "https://nytlbtwhmrvpzxqzusxg.supabase.co";
-  const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dGxidHdobXJ2cHp4cXp1c3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzk2OTQsImV4cCI6MjA4NjgxNTY5NH0.mIx0MFqIHzL_zgpgLaDyImWgAAMoxRni2Nk-9iPYYzs";
-  const supabase        = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+  const supabaseUrl = "https://nytlbtwhmrvpzxqzusxg.supabase.co";
+  const supabaseAnonKey =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55dGxidHdobXJ2cHp4cXp1c3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzk2OTQsImV4cCI6MjA4NjgxNTY5NH0.mIx0MFqIHzL_zgpgLaDyImWgAAMoxRni2Nk-9iPYYzs";
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
   // -----------------------------
   // 2) UI REFS
   // -----------------------------
   const UI = {
-    panelLogin:    $("#panelLogin"),
+    panelLogin: $("#panelLogin"),
     panelRegister: $("#panelRegister"),
-    panelWelcome:  $("#panelWelcome"),
-    panelQuiz:     $("#panelQuiz"),
-    panelResults:  $("#panelResults"),
-    panelChat:     $("#panelChat"),
-
+    panelWelcome: $("#panelWelcome"),
+    panelQuiz: $("#panelQuiz"),
+    panelResults: $("#panelResults"),
+    panelChat: $("#panelChat"),
     topSubtitle: $("#topSubtitle"),
 
-    loginForm:       $("#loginForm"),
-    loginMsg:        $("#loginMsg"),
+    loginForm: $("#loginForm"),
+    loginMsg: $("#loginMsg"),
     goToRegisterBtn: $("#goToRegisterBtn"),
 
-    registerForm:    $("#registerForm"),
-    regMsg:          $("#regMsg"),
-    backToLoginBtn:  $("#backToLoginBtn"),
+    registerForm: $("#registerForm"),
+    regMsg: $("#regMsg"),
+    backToLoginBtn: $("#backToLoginBtn"),
 
-    welcomeLine:        $("#welcomeLine"),
-    welcomeTitle:       $("#welcomeTitle"),
-    welcomeCompany:     $("#welcomeCompany"),
+    welcomeLine: $("#welcomeLine"),
+    welcomeTitle: $("#welcomeTitle"),
+    welcomeCompany: $("#welcomeCompany"),
     welcomeCompanyLine: $("#welcomeCompanyLine"),
-    continueBtn:        $("#continueBtn"),
-    logoutBtn:          $("#logoutBtn"),
-    logoutBtn2:         $("#logoutBtn2"),
+    continueBtn: $("#continueBtn"),
+    logoutBtn: $("#logoutBtn"),
+    logoutBtn2: $("#logoutBtn2"),
 
-    helpBtn:       $("#helpBtn"),
-    helpModal:     $("#helpModal"),
+    helpBtn: $("#helpBtn"),
+    helpModal: $("#helpModal"),
     modalBackdrop: $("#modalBackdrop"),
-    closeModal:    $("#closeModal"),
-    modalOk:       $("#modalOk"),
+    closeModal: $("#closeModal"),
+    modalOk: $("#modalOk"),
 
-    quizForm:      $("#quizForm"),
+    quizForm: $("#quizForm"),
     quizContainer: $("#quizContainer"),
-    quizMsg:       $("#quizMsg"),
-    quizProgress:  $("#quizProgress"),
-    quizBackBtn:   $("#quizBackBtn"),
+    quizMsg: $("#quizMsg"),
+    quizProgress: $("#quizProgress"),
+    quizBackBtn: $("#quizBackBtn"),
 
-    resultsGrid:    $("#resultsGrid"),
-    recommendChip:  $("#recommendChip"),
-    recommendBox:   $("#recommendBox"),
+    resultsGrid: $("#resultsGrid"),
+    recommendChip: $("#recommendChip"),
+    recommendBox: $("#recommendBox"),
     resultsBackBtn: $("#resultsBackBtn"),
-    restartBtn:     $("#restartBtn"),
-    chatWithAIBtn:  $("#chatWithAIBtn"),
+    restartBtn: $("#restartBtn"),
+    chatWithAIBtn: $("#chatWithAIBtn"),
+
+    personalInfoBtn: $("#personalInfoBtn"),
+    personalInfoModal: $("#personalInfoModal"),
+    personalInfoBackdrop: $("#personalInfoBackdrop"),
+    closePersonalInfoModal: $("#closePersonalInfoModal"),
+    personalInfoOkBtn: $("#personalInfoOkBtn"),
+    savePersonalInfoBtn: $("#savePersonalInfoBtn"),
+    personalInfoMsg: $("#personalInfoMsg"),
+    infoNameInput: $("#infoNameInput"),
+    infoAge: $("#infoAge"),
+    infoGender: $("#infoGender"),
   };
 
-  // Partner invite elements — optional, won't throw if missing
   const invitePartnerInput = $("#invitePartnerInput");
-  const invitePartnerBtn   = $("#invitePartnerBtn");
-  const invitePartnerMsg   = $("#invitePartnerMsg");
+  const invitePartnerBtn = $("#invitePartnerBtn");
+  const invitePartnerMsg = $("#invitePartnerMsg");
+
+  const inviteCodeInput = $("#inviteCodeInput");
+  const loginEmail = $("#loginEmail");
+  const loginPassword = $("#loginPassword");
+  const firstNameInput = $("#firstNameInput");
+  const surnameInput = $("#surnameInput");
+  const genderInput = $("#genderInput");
+  const ageInput = $("#ageInput");
+  const regEmail = $("#regEmail");
+  const regPassword = $("#regPassword");
+
+  const chatRestartQuizBtn = $("#chatRestartQuizBtn");
+  const chatLogoutBtn = $("#chatLogoutBtn");
 
   const PARTNER_ASSETS = {
-    Terveystalo:      { logo: "TERVEYSTALO" },
-    "Mehiläinen":     { logo: "MEHILÄINEN"  },
-    "Lovnity Partner":{ logo: "LOVNITY"     },
+    Terveystalo: { logo: "TERVEYSTALO" },
+    "Mehiläinen": { logo: "MEHILÄINEN" },
+    "Lovnity Partner": { logo: "LOVNITY" },
   };
 
   // -----------------------------
-  // 3) AUTH FLOW
+  // 3) APP STATE
+  // -----------------------------
+  let lastQuizAnswers = null;
+  let lastQuizResult = null;
+  let currentUserName = "Friend";
+  let currentUserId = null;
+  let chatbot = null;
+
+  try {
+    chatbot = initChatbot?.(supabase) || initChatbot?.() || null;
+  } catch (err) {
+    console.warn("Chatbot init warning:", err);
+    chatbot = null;
+  }
+
+  // -----------------------------
+  // 4) AUTH FLOW
   // -----------------------------
   checkSession();
 
   async function checkSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session?.user) {
       await fetchProfileAndShowWelcome(session.user);
     } else {
       showLogin();
     }
   }
 
-  UI.goToRegisterBtn.addEventListener("click", showRegister);
-  UI.backToLoginBtn.addEventListener("click",  showLogin);
+  UI.goToRegisterBtn?.addEventListener("click", showRegister);
+  UI.backToLoginBtn?.addEventListener("click", showLogin);
 
-  // Business invite code input — alphanumeric only (e.g. 253fe3)
-  const inviteEl = $("#inviteCodeInput");
-  if (inviteEl) {
-    inviteEl.addEventListener("input", (e) => {
+  if (inviteCodeInput) {
+    inviteCodeInput.addEventListener("input", (e) => {
       e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6);
     });
   }
 
-  // Partner invite code input — alphanumeric only (e.g. 253fe3)
   if (invitePartnerInput) {
     invitePartnerInput.addEventListener("input", (e) => {
       e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6);
     });
   }
 
-  UI.loginForm.addEventListener("submit", async (e) => {
+  UI.loginForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     setMsg(UI.loginMsg, "");
-    const email    = $("#loginEmail").value.trim();
-    const password = $("#loginPassword").value;
+
+    const email = loginEmail?.value.trim() || "";
+    const password = loginPassword?.value || "";
+
     disableForm(UI.loginForm, "Logging in...");
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
     if (error) {
       enableForm(UI.loginForm, "Log In");
       setMsg(UI.loginMsg, "Invalid email or password.", "error");
       shake(UI.panelLogin);
       return;
     }
+
+    enableForm(UI.loginForm, "Log In");
     await fetchProfileAndShowWelcome(data.user);
   });
 
-  UI.registerForm.addEventListener("submit", async (e) => {
+  UI.registerForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     setMsg(UI.regMsg, "");
-    const firstName  = $("#firstNameInput").value.trim();
-    const surname    = $("#surnameInput").value.trim();
-    const gender     = $("#genderInput").value.trim();
-    const age        = Number($("#ageInput").value.trim());
-    const email      = $("#regEmail").value.trim();
-    const password   = $("#regPassword").value;
-    const inviteCode = $("#inviteCodeInput").value.trim();
+
+    const firstName = firstNameInput?.value.trim() || "";
+    const surname = surnameInput?.value.trim() || "";
+    const gender = genderInput?.value.trim() || "";
+    const age = Number(ageInput?.value.trim() || "0");
+    const email = regEmail?.value.trim() || "";
+    const password = regPassword?.value || "";
+    const inviteCode = inviteCodeInput?.value.trim() || "";
+
+    if (!firstName || !surname || !gender || !age || !email || !password) {
+      setMsg(UI.regMsg, "Please complete all fields.", "error");
+      return;
+    }
 
     if (inviteCode.length !== 6) {
       setMsg(UI.regMsg, "Invite code must be exactly 6 characters.", "error");
@@ -146,14 +199,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     disableForm(UI.registerForm, "Creating account...");
 
-    // Check if this is a partner join (code exists in users.couple_code)
-    const { data: isPartnerCode } = await supabase
-      .rpc("check_couple_code", { input_code: inviteCode.toLowerCase() });
+    const { data: isPartnerCode } = await supabase.rpc("check_couple_code", {
+      input_code: inviteCode.toLowerCase(),
+    });
 
-    // If not a partner code, validate against business_invites (normal business signup)
     if (!isPartnerCode) {
-      const { data: bizCheck, error: bizErr } = await supabase
-        .rpc("check_business_code", { input_code: inviteCode.toLowerCase() });
+      const { data: bizCheck, error: bizErr } = await supabase.rpc("check_business_code", {
+        input_code: inviteCode.toLowerCase(),
+      });
+
       if (bizErr || !bizCheck) {
         enableForm(UI.registerForm, "Sign Up");
         setMsg(UI.regMsg, "Invalid or already used invite code.", "error");
@@ -167,8 +221,8 @@ document.addEventListener("DOMContentLoaded", () => {
       password,
       options: {
         data: {
-          first_name:    firstName,
-          last_name:     surname,
+          first_name: firstName,
+          last_name: surname,
           age,
           gender,
           business_code: inviteCode.toLowerCase(),
@@ -183,20 +237,25 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    enableForm(UI.registerForm, "Sign Up");
     setMsg(UI.regMsg, "Success! Logging you in...", "success");
     await sleep(400);
     await fetchProfileAndShowWelcome(data.user);
   });
 
-  // ── Partner invite flow ────────────────────────────────────────
-  // User enters a 6-digit partner invite code (sent by their partner)
-  // → validates the code → pre-fills register form → user signs up
+  // -----------------------------
+  // 5) PARTNER INVITE FLOW
+  // -----------------------------
   if (invitePartnerBtn) {
     invitePartnerBtn.addEventListener("click", () => submitPartnerInvite());
   }
+
   if (invitePartnerInput) {
     invitePartnerInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); submitPartnerInvite(); }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitPartnerInvite();
+      }
     });
   }
 
@@ -211,88 +270,81 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (invitePartnerBtn) {
-      invitePartnerBtn.disabled    = true;
+      invitePartnerBtn.disabled = true;
       invitePartnerBtn.textContent = "Checking…";
     }
 
     try {
-      // Uses an RPC function that runs as SECURITY DEFINER (bypasses RLS)
-      // Run this SQL once in Supabase SQL Editor:
-      //
-      //   create or replace function check_couple_code(input_code text)
-      //   returns boolean
-      //   language sql
-      //   security definer
-      //   as $$
-      //     select exists (
-      //       select 1 from users where couple_code = input_code
-      //     );
-      //   $$;
-      //
-      const { data: isValid, error: rpcErr } = await supabase
-        .rpc("check_couple_code", { input_code: code });
-
-      console.log("Partner code RPC result:", { isValid, rpcErr });
+      const { data: isValid, error: rpcErr } = await supabase.rpc("check_couple_code", {
+        input_code: code,
+      });
 
       if (invitePartnerBtn) {
-        invitePartnerBtn.disabled    = false;
+        invitePartnerBtn.disabled = false;
         invitePartnerBtn.textContent = "Join →";
       }
 
       if (rpcErr || !isValid) {
         setMsg(invitePartnerMsg, "Partner invite code not recognised. Please check the code.", "error");
-        if (invitePartnerInput.closest) shake(invitePartnerInput.closest(".invitePartnerBox") || invitePartnerInput);
+        shake(invitePartnerInput.closest?.(".invitePartnerBox") || invitePartnerInput);
         return;
       }
 
-      // Valid — switch to register panel with the code pre-filled
       setMsg(invitePartnerMsg, "Code accepted! Fill in your details below.", "success");
       await sleep(300);
-
       showRegister();
 
-      // Pre-fill AND lock the business invite code field
-      const inviteCodeField = $("#inviteCodeInput");
-      if (inviteCodeField) {
-        inviteCodeField.value    = code;
-        inviteCodeField.readOnly = true;
+      if (inviteCodeInput) {
+        inviteCodeInput.value = code;
+        inviteCodeInput.readOnly = true;
       }
 
-      setMsg(UI.regMsg, "💌 Joining your partner — your code has been filled in automatically.", "success");
-
+      setMsg(UI.regMsg, "Joining your partner — your code has been filled in automatically.", "success");
     } catch (err) {
       console.error("submitPartnerInvite error:", err);
+
       if (invitePartnerBtn) {
-        invitePartnerBtn.disabled    = false;
+        invitePartnerBtn.disabled = false;
         invitePartnerBtn.textContent = "Join →";
       }
+
       setMsg(invitePartnerMsg, "Could not verify code right now — try again shortly.", "error");
     }
   }
-  // ── End partner invite flow ────────────────────────────────────
 
+  // -----------------------------
+  // 6) PROFILE + WELCOME
+  // -----------------------------
   async function fetchProfileAndShowWelcome(user) {
     if (!user) return;
-    let lastName    = "User";
+
+    let firstName = "Friend";
+    let lastName = "User";
     let partnerName = null;
+
     try {
       const { data: profile } = await supabase
         .from("users")
-        .select("last_name, business_partners(name)")
+        .select("first_name, last_name, age, gender, business_partners(name)")
         .eq("id", user.id)
         .single();
+
       if (profile) {
-        lastName    = profile.last_name || lastName;
-        partnerName = profile.business_partners?.name;
+        firstName = profile.first_name || firstName;
+        lastName = profile.last_name || lastName;
+        partnerName = profile.business_partners?.name || null;
       } else {
         const meta = user.user_metadata || {};
-        lastName   = meta.last_name || meta.first_name || "User";
+        firstName = meta.first_name || firstName;
+        lastName = meta.last_name || lastName;
+
         if (meta.business_code) {
           const { data: invite } = await supabase
             .from("business_invites")
             .select("business_partners(name)")
             .eq("code", meta.business_code)
             .single();
+
           if (invite?.business_partners?.name) {
             partnerName = invite.business_partners.name;
           }
@@ -301,108 +353,285 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error("Profile fetch error:", err);
     }
-    showWelcome({ lastName, partner: attachPartnerAssets(partnerName) });
+
+    currentUserId = user.id;
+    currentUserName = firstName || lastName || "Friend";
+
+    showWelcome({
+      firstName,
+      lastName,
+      partner: attachPartnerAssets(partnerName),
+    });
   }
 
-  UI.continueBtn.addEventListener("click", () => showQuiz());
-  UI.logoutBtn.addEventListener("click",   doLogout);
-  UI.logoutBtn2.addEventListener("click",  doLogout);
+  UI.continueBtn?.addEventListener("click", () => showQuiz());
+  UI.logoutBtn?.addEventListener("click", doLogout);
+  UI.logoutBtn2?.addEventListener("click", doLogout);
+  chatLogoutBtn?.addEventListener("click", doLogout);
 
   async function doLogout() {
     await supabase.auth.signOut();
-    UI.loginForm.reset();
-    UI.registerForm.reset();
-    // Unlock the invite code field if it was locked
-    const inviteCodeField = $("#inviteCodeInput");
-    if (inviteCodeField) inviteCodeField.readOnly = false;
+
+    UI.loginForm?.reset();
+    UI.registerForm?.reset();
+
+    if (inviteCodeInput) inviteCodeInput.readOnly = false;
+
     setMsg(UI.loginMsg, "");
-    setMsg(UI.regMsg,   "");
+    setMsg(UI.regMsg, "");
+    setMsg(invitePartnerMsg, "");
+    closePersonalInfoModal();
+    closeHelpModal();
+
+    lastQuizAnswers = null;
+    lastQuizResult = null;
+
     showLogin();
   }
 
   // -----------------------------
-  // 4) HELP MODAL
+  // 7) HELP MODAL
   // -----------------------------
-  UI.helpBtn.addEventListener("click", () => {
-    UI.modalBackdrop.classList.remove("hidden");
-    UI.helpModal.classList.remove("hidden");
+  UI.helpBtn?.addEventListener("click", () => {
+    UI.modalBackdrop?.classList.remove("hidden");
+    UI.helpModal?.classList.remove("hidden");
   });
 
-  const closeHelpModal = () => {
-    UI.modalBackdrop.classList.add("hidden");
-    UI.helpModal.classList.add("hidden");
-  };
+  function closeHelpModal() {
+    UI.modalBackdrop?.classList.add("hidden");
+    UI.helpModal?.classList.add("hidden");
+  }
 
-  UI.closeModal.addEventListener("click",    closeHelpModal);
-  UI.modalOk.addEventListener("click",       closeHelpModal);
-  UI.modalBackdrop.addEventListener("click", closeHelpModal);
+  UI.closeModal?.addEventListener("click", closeHelpModal);
+  UI.modalOk?.addEventListener("click", closeHelpModal);
+  UI.modalBackdrop?.addEventListener("click", closeHelpModal);
 
   // -----------------------------
-  // 5) QUIZ UI + STATE
+  // 8) PERSONAL INFO MODAL
   // -----------------------------
-  let lastQuizAnswers = null;
-  let lastQuizResult  = null;
-  let currentUserName = "Friend";
-  let currentUserId   = null;
+  UI.personalInfoBtn?.addEventListener("click", openPersonalInfoModal);
+  UI.closePersonalInfoModal?.addEventListener("click", closePersonalInfoModal);
+  UI.personalInfoOkBtn?.addEventListener("click", closePersonalInfoModal);
+  UI.personalInfoBackdrop?.addEventListener("click", closePersonalInfoModal);
+  UI.savePersonalInfoBtn?.addEventListener("click", savePersonalInfo);
 
-  UI.quizBackBtn.addEventListener("click", () => { showWelcomeOnly(); });
+  function closePersonalInfoModal() {
+    UI.personalInfoBackdrop?.classList.add("hidden");
+    UI.personalInfoModal?.classList.add("hidden");
+    setMsg(UI.personalInfoMsg, "");
+  }
 
-  UI.resultsBackBtn.addEventListener("click", () => {
+  async function openPersonalInfoModal() {
+    setMsg(UI.personalInfoMsg, "");
+
+    try {
+      const {
+        data: { user },
+        error: userErr,
+      } = await supabase.auth.getUser();
+
+      if (userErr || !user) {
+        setMsg(UI.personalInfoMsg, "Could not load your account.", "error");
+        return;
+      }
+
+      const { data: profile, error: profileErr } = await supabase
+        .from("users")
+        .select("first_name, last_name, age, gender")
+        .eq("id", user.id)
+        .single();
+
+      if (profileErr) {
+        console.error("Could not load personal info:", profileErr);
+        setMsg(UI.personalInfoMsg, "Could not load your info.", "error");
+        return;
+      }
+
+      const firstName = profile?.first_name || "";
+      const lastName = profile?.last_name || "";
+      const fullName = `${firstName} ${lastName}`.trim();
+
+      if (UI.infoNameInput) UI.infoNameInput.value = fullName;
+      if (UI.infoAge) UI.infoAge.textContent = profile?.age ?? "—";
+      if (UI.infoGender) UI.infoGender.textContent = profile?.gender || "—";
+
+      UI.personalInfoBackdrop?.classList.remove("hidden");
+      UI.personalInfoModal?.classList.remove("hidden");
+    } catch (err) {
+      console.error("openPersonalInfoModal error:", err);
+      setMsg(UI.personalInfoMsg, "Something went wrong.", "error");
+    }
+  }
+
+  async function savePersonalInfo() {
+    setMsg(UI.personalInfoMsg, "");
+
+    try {
+      const {
+        data: { user },
+        error: userErr,
+      } = await supabase.auth.getUser();
+
+      if (userErr || !user) {
+        setMsg(UI.personalInfoMsg, "Could not find your account.", "error");
+        return;
+      }
+
+      const rawName = (UI.infoNameInput?.value || "").trim();
+
+      if (!rawName) {
+        setMsg(UI.personalInfoMsg, "Please enter your name.", "error");
+        return;
+      }
+
+      const parts = rawName.split(/\s+/).filter(Boolean);
+      const firstName = parts.shift() || "";
+      const lastName = parts.join(" ");
+
+      UI.savePersonalInfoBtn.disabled = true;
+      UI.savePersonalInfoBtn.textContent = "Saving...";
+
+      const { error: updateErr } = await supabase
+        .from("users")
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+        })
+        .eq("id", user.id);
+
+      UI.savePersonalInfoBtn.disabled = false;
+      UI.savePersonalInfoBtn.textContent = "Save";
+
+      if (updateErr) {
+        console.error("Failed to save name:", updateErr);
+        setMsg(UI.personalInfoMsg, "Could not save your name.", "error");
+        return;
+      }
+
+      currentUserName = firstName || lastName || currentUserName;
+
+      if (UI.welcomeLine) {
+        UI.welcomeLine.textContent = `Welcome ${escapeHtml(firstName || lastName || "")}`.trim();
+      }
+
+      setMsg(UI.personalInfoMsg, "Name updated successfully.", "success");
+    } catch (err) {
+      console.error("savePersonalInfo error:", err);
+      UI.savePersonalInfoBtn.disabled = false;
+      UI.savePersonalInfoBtn.textContent = "Save";
+      setMsg(UI.personalInfoMsg, "Something went wrong while saving.", "error");
+    }
+  }
+
+  // -----------------------------
+  // 9) QUIZ FLOW
+  // -----------------------------
+  UI.quizBackBtn?.addEventListener("click", () => {
+    showWelcomeOnly();
+  });
+
+  UI.resultsBackBtn?.addEventListener("click", () => {
     showQuiz();
     if (lastQuizAnswers) hydrateQuizAnswers(lastQuizAnswers);
   });
 
-  UI.restartBtn.addEventListener("click", () => {
+  UI.restartBtn?.addEventListener("click", () => {
     lastQuizAnswers = null;
-    lastQuizResult  = null;
+    lastQuizResult = null;
     showQuiz();
     resetQuizToDefaults();
   });
 
-  UI.quizForm.addEventListener("submit", async (e) => {
+  chatRestartQuizBtn?.addEventListener("click", () => {
+    lastQuizAnswers = null;
+    lastQuizResult = null;
+    showQuiz();
+    resetQuizToDefaults();
+  });
+
+  UI.quizForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     setMsg(UI.quizMsg, "");
+
     const answers = readQuizAnswers();
     lastQuizAnswers = answers;
-    const result  = scoreQuiz(answers);
+
+    const result = scoreQuiz(answers);
     lastQuizResult = result;
+
     showResults(result);
     await saveQuizToDatabase(answers, result);
   });
 
-  // "Chat with AI" button on results panel
-  UI.chatWithAIBtn.addEventListener("click", async () => {
+  UI.chatWithAIBtn?.addEventListener("click", async () => {
     if (!lastQuizResult) return;
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (user) {
-        currentUserId   = user.id;
-        const meta      = user.user_metadata || {};
+        currentUserId = user.id;
+
+        const meta = user.user_metadata || {};
         currentUserName = meta.first_name || meta.last_name || "Friend";
+
         const { data: profile } = await supabase
-          .from("users").select("first_name, last_name").eq("id", user.id).single();
-        if (profile) currentUserName = profile.first_name || profile.last_name || currentUserName;
+          .from("users")
+          .select("first_name, last_name")
+          .eq("id", user.id)
+          .single();
+
+        if (profile) {
+          currentUserName = profile.first_name || profile.last_name || currentUserName;
+        }
       }
     } catch (_) {}
+
     showChat();
-    chatbot.start(lastQuizResult, currentUserName, currentUserId);
+
+    if (chatbot && typeof chatbot.start === "function") {
+      chatbot.start(lastQuizResult, currentUserName, currentUserId);
+    } else {
+      const chatRoot = document.querySelector("#chatRoot");
+      if (chatRoot) {
+        chatRoot.innerHTML = `
+          <div class="chatFallback">
+            <p><strong>Focus area:</strong> ${escapeHtml(lastQuizResult.winner.label)}</p>
+            <p>Your AI chat module is available in the repo, but it did not initialize here.</p>
+          </div>
+        `;
+      }
+    }
   });
 
   async function saveQuizToDatabase(answers, result) {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) return;
-      const classAverages = result.classResults.map(r => ({
-        classId: r.classId, label: r.label, avg: r.avg
+
+      const classAverages = result.classResults.map((r) => ({
+        classId: r.classId,
+        label: r.label,
+        avg: r.avg,
       }));
+
       const { error } = await supabase.from("quiz_results").insert({
-        user_id:            user.id,
-        answers:            answers,
-        class_averages:     classAverages,
-        recommended_class:  result.winner.label,
+        user_id: user.id,
+        answers,
+        class_averages: classAverages,
+        recommended_class: result.winner.label,
       });
-      if (error) console.error("Failed to save quiz results:", error.message);
-      else       console.log("Quiz results saved successfully!");
+
+      if (error) {
+        console.error("Failed to save quiz results:", error.message);
+      } else {
+        console.log("Quiz results saved successfully!");
+      }
     } catch (err) {
       console.error("Database connection error:", err);
     }
@@ -410,233 +639,262 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showQuiz() {
     hideAllPanels();
-    UI.panelQuiz.classList.remove("hidden");
-    UI.topSubtitle.textContent = "Quiz: slide to score each topic.";
+    UI.panelQuiz?.classList.remove("hidden");
+    if (UI.topSubtitle) UI.topSubtitle.textContent = "Quiz: slide to score each topic.";
     renderQuiz();
     resetQuizToDefaults();
   }
 
   function renderQuiz() {
+    if (!UI.quizContainer) return;
+
     UI.quizContainer.innerHTML = "";
+
     for (const item of QUIZ_ITEMS) {
       const row = document.createElement("div");
-      row.className      = "quizRow";
+      row.className = "quizRow";
       row.dataset.itemId = item.id;
-      const safeLabel  = escapeHtml(item.label);
-      const classLabel = escapeHtml(CLASS_META[item.classId].label);
+
+      const safeLabel = escapeHtml(item.label);
+      const classLabel = escapeHtml(CLASS_META[item.classId]?.label || `Class ${item.classId}`);
+
       row.innerHTML = `
-        <div class="quizRow__top">
-          <div class="quizRow__label">
-            <div class="quizRow__title">${safeLabel}</div>
-            <div class="quizRow__class">Class ${item.classId}: ${classLabel}</div>
+        <div class="quizRowTop">
+          <div>
+            <div class="quizLabel">${safeLabel}</div>
+            <div class="quizClass">Class ${item.classId}: ${classLabel}</div>
           </div>
-          <div class="quizRow__value">${SLIDER_DEFAULT}</div>
+          <div class="quizValue">${SLIDER_DEFAULT}</div>
         </div>
-        <div class="sliderWrap">
-          <span class="sliderHint">${SLIDER_MIN}</span>
-          <input class="slider" type="range" min="${SLIDER_MIN}" max="${SLIDER_MAX}"
-            step="${SLIDER_STEP}" value="${SLIDER_DEFAULT}"
-            name="${escapeHtml(item.id)}" aria-label="${safeLabel}" />
-          <span class="sliderHint">${SLIDER_MAX}</span>
-        </div>`;
-      UI.quizContainer.appendChild(row);
-      const slider  = row.querySelector("input.slider");
-      const valueEl = row.querySelector(".quizRow__value");
-      slider.addEventListener("input", () => {
-        valueEl.textContent = String(slider.value);
-        updateProgress();
+
+        <input
+          class="quizSlider"
+          type="range"
+          min="${SLIDER_MIN}"
+          max="${SLIDER_MAX}"
+          step="${SLIDER_STEP}"
+          value="${SLIDER_DEFAULT}"
+          data-item-id="${escapeHtml(item.id)}"
+        />
+
+        <div class="quizScale">
+          <span>${SLIDER_MIN}</span>
+          <span>${SLIDER_MAX}</span>
+        </div>
+      `;
+
+      const slider = row.querySelector(".quizSlider");
+      const valueLabel = row.querySelector(".quizValue");
+
+      slider?.addEventListener("input", () => {
+        valueLabel.textContent = slider.value;
+        updateQuizProgress();
       });
+
+      UI.quizContainer.appendChild(row);
     }
-    updateProgress();
-  }
 
-  function resetQuizToDefaults() {
-    UI.quizContainer.querySelectorAll("input.slider").forEach((s) => (s.value = String(SLIDER_DEFAULT)));
-    UI.quizContainer.querySelectorAll(".quizRow").forEach((row) => {
-      const vEl = row.querySelector(".quizRow__value");
-      if (vEl) vEl.textContent = String(SLIDER_DEFAULT);
-    });
-    updateProgress();
-  }
-
-  function updateProgress() {
-    UI.quizProgress.textContent = `${QUIZ_ITEMS.length} / ${QUIZ_ITEMS.length}`;
+    updateQuizProgress();
   }
 
   function readQuizAnswers() {
     const answers = {};
-    UI.quizContainer.querySelectorAll(".quizRow").forEach((row) => {
-      const id     = row.dataset.itemId;
-      const slider = row.querySelector("input.slider");
-      answers[id]  = slider ? Number(slider.value) : SLIDER_DEFAULT;
+
+    document.querySelectorAll(".quizSlider").forEach((slider) => {
+      answers[slider.dataset.itemId] = Number(slider.value);
     });
+
     return answers;
   }
 
   function hydrateQuizAnswers(answers) {
-    UI.quizContainer.querySelectorAll(".quizRow").forEach((row) => {
-      const id     = row.dataset.itemId;
-      const slider = row.querySelector("input.slider");
-      const vEl    = row.querySelector(".quizRow__value");
-      const v      = Number(answers?.[id] ?? SLIDER_DEFAULT);
-      if (slider) slider.value    = String(v);
-      if (vEl)    vEl.textContent = String(v);
+    document.querySelectorAll(".quizSlider").forEach((slider) => {
+      const id = slider.dataset.itemId;
+      if (Object.prototype.hasOwnProperty.call(answers, id)) {
+        slider.value = String(answers[id]);
+        const valueEl = slider.closest(".quizRow")?.querySelector(".quizValue");
+        if (valueEl) valueEl.textContent = String(answers[id]);
+      }
     });
-    updateProgress();
+
+    updateQuizProgress();
+  }
+
+  function resetQuizToDefaults() {
+    document.querySelectorAll(".quizSlider").forEach((slider) => {
+      slider.value = String(SLIDER_DEFAULT);
+      const valueEl = slider.closest(".quizRow")?.querySelector(".quizValue");
+      if (valueEl) valueEl.textContent = String(SLIDER_DEFAULT);
+    });
+
+    updateQuizProgress();
+  }
+
+  function updateQuizProgress() {
+    const sliders = Array.from(document.querySelectorAll(".quizSlider"));
+    const total = sliders.length;
+    const completed = sliders.filter((s) => s.value !== "").length;
+
+    if (UI.quizProgress) {
+      UI.quizProgress.textContent = `${completed} / ${total}`;
+    }
   }
 
   function showResults(result) {
     hideAllPanels();
-    UI.panelResults.classList.remove("hidden");
-    UI.topSubtitle.textContent = "Your quiz results.";
+    UI.panelResults?.classList.remove("hidden");
 
-    // Sort for display: worst (lowest avg) first
-    const ordered = result.classResults.slice().sort((a, b) => a.avg - b.avg);
-
-    UI.resultsGrid.innerHTML = "";
-    for (const r of ordered) {
-      const card = document.createElement("div");
-      card.className = "resultCard";
-
-      // Badge colour based on score direction
-      let badge = "";
-      if      (r.avg <= 3) badge = `<span class="resultBadge resultBadge--problem">Needs focus 🔴</span>`;
-      else if (r.avg <= 6) badge = `<span class="resultBadge resultBadge--mid">Some issues 🟡</span>`;
-      else                 badge = `<span class="resultBadge resultBadge--good">Doing well 💚</span>`;
-
-      card.innerHTML = `
-        <div class="resultCard__title">Class ${r.classId}: ${escapeHtml(r.label)} ${badge}</div>
-        <div class="resultCard__meta">Sum: <strong>${r.sum}</strong> &nbsp;·&nbsp; Items: <strong>${r.count}</strong></div>
-        <div class="resultCard__avg">Average: <strong>${format1(r.avg)}</strong> / 10
-          <span class="resultCard__note">(lower = more to work on)</span>
-        </div>`;
-      UI.resultsGrid.appendChild(card);
+    if (UI.topSubtitle) {
+      UI.topSubtitle.textContent = "Your quiz results.";
     }
 
-    UI.recommendChip.textContent = `Focus area: ${result.winner.label}`;
-    UI.recommendBox.innerHTML = `
-      <div class="recommendTitle">Suggested focus area</div>
-      <div class="recommendMain">${escapeHtml(result.winner.label)}</div>
-      <div class="recommendSub">
-        This area scored lowest (<strong>${format1(result.winner.avg)}/10</strong>),
-        meaning it needs the most attention.
-        The chatbot will use this as the starting point for your conversation.
-      </div>`;
+    if (UI.resultsGrid) {
+      UI.resultsGrid.innerHTML = "";
+    }
+
+    for (const r of result.classResults) {
+      const badge = r.classId === result.winner.classId ? "⭐" : "";
+      const card = document.createElement("div");
+      card.className = "resultCard";
+      card.innerHTML = `
+        <h3>Class ${escapeHtml(String(r.classId))}: ${escapeHtml(r.label)} ${badge}</h3>
+        <p>Sum: ${escapeHtml(String(r.sum))} · Items: ${escapeHtml(String(r.count))}</p>
+        <p>Average: ${format1(r.avg)} / 10 (lower = more to work on)</p>
+      `;
+      UI.resultsGrid?.appendChild(card);
+    }
+
+    if (UI.recommendChip) {
+      UI.recommendChip.textContent = `Focus area: ${result.winner.label}`;
+    }
+
+    if (UI.recommendBox) {
+      UI.recommendBox.innerHTML = `
+        <h3>Suggested focus area</h3>
+        <p><strong>${escapeHtml(result.winner.label)}</strong></p>
+        <p>
+          This area has the lowest average score in your quiz, so it is the best place
+          to focus first.
+        </p>
+      `;
+    }
   }
 
   // -----------------------------
-  // 6) VIEW SWITCHING
+  // 10) VIEW HELPERS
   // -----------------------------
   function hideAllPanels() {
-    UI.panelLogin.classList.add("hidden");
-    UI.panelRegister.classList.add("hidden");
-    UI.panelWelcome.classList.add("hidden");
-    UI.panelQuiz.classList.add("hidden");
-    UI.panelResults.classList.add("hidden");
-    UI.panelChat.classList.add("hidden");
+    UI.panelLogin?.classList.add("hidden");
+    UI.panelRegister?.classList.add("hidden");
+    UI.panelWelcome?.classList.add("hidden");
+    UI.panelQuiz?.classList.add("hidden");
+    UI.panelResults?.classList.add("hidden");
+    UI.panelChat?.classList.add("hidden");
   }
 
   function showLogin() {
     hideAllPanels();
-    UI.panelLogin.classList.remove("hidden");
-    UI.topSubtitle.textContent = "Sign in to your account.";
-    setMsg(UI.loginMsg, "");
+    UI.panelLogin?.classList.remove("hidden");
+    if (UI.topSubtitle) UI.topSubtitle.textContent = "Sign in to your account.";
   }
 
   function showRegister() {
     hideAllPanels();
-    UI.panelRegister.classList.remove("hidden");
-    UI.topSubtitle.textContent = "Create your new account.";
-    setMsg(UI.regMsg, "");
+    UI.panelRegister?.classList.remove("hidden");
+    if (UI.topSubtitle) UI.topSubtitle.textContent = "Create your Lovnity account.";
+  }
+
+  function showWelcome({ firstName, lastName, partner }) {
+    hideAllPanels();
+    UI.panelWelcome?.classList.remove("hidden");
+
+    if (UI.topSubtitle) UI.topSubtitle.textContent = "Welcome";
+    if (UI.welcomeLine) UI.welcomeLine.textContent = `Welcome ${firstName || lastName || "there"}`;
+    if (UI.welcomeTitle) UI.welcomeTitle.textContent = "You’re in.";
+
+    if (partner?.logo) {
+      UI.welcomeCompanyLine?.classList.remove("hidden");
+      if (UI.welcomeCompany) UI.welcomeCompany.textContent = partner.logo;
+    } else {
+      UI.welcomeCompanyLine?.classList.add("hidden");
+      if (UI.welcomeCompany) UI.welcomeCompany.textContent = "LOVNITY";
+    }
   }
 
   function showWelcomeOnly() {
     hideAllPanels();
-    UI.panelWelcome.classList.remove("hidden");
-    UI.topSubtitle.textContent = "You're all set.";
-  }
-
-  function showWelcome(profile) {
-    hideAllPanels();
-    UI.panelWelcome.classList.remove("hidden");
-    const p = profile.partner || {};
-    UI.topSubtitle.textContent  = "You're all set.";
-    UI.welcomeLine.textContent  = "Authentication successful.";
-    UI.welcomeTitle.textContent = `Welcome, ${escapeHtml(profile.lastName)}! 💗`;
-    UI.welcomeCompany.textContent     = p.name ? `Greetings from ${p.name}` : "Greetings from Partner";
-    UI.welcomeCompanyLine.textContent = p.name ? `You are connected via ${p.name}.` : "";
-    const logoEl = $("#welcomeLogo");
-    if (logoEl) logoEl.textContent = p.logo || "LOVNITY";
+    UI.panelWelcome?.classList.remove("hidden");
+    if (UI.topSubtitle) UI.topSubtitle.textContent = "Welcome";
   }
 
   function showChat() {
     hideAllPanels();
-    UI.panelChat.classList.remove("hidden");
-    UI.topSubtitle.textContent = "Chat with your AI companion.";
+    UI.panelChat?.classList.remove("hidden");
+    if (UI.topSubtitle) UI.topSubtitle.textContent = "AI Chat";
+  }
+
+  function attachPartnerAssets(partnerName) {
+    if (!partnerName) return null;
+    return PARTNER_ASSETS[partnerName] || { logo: partnerName };
   }
 
   // -----------------------------
-  // 7) HELPERS
+  // 11) GENERIC HELPERS
   // -----------------------------
-  function setMsg(el, text, type) {
+  function setMsg(el, msg, type = "") {
     if (!el) return;
-    el.textContent = text || "";
-    el.classList.remove("msg--error", "msg--success");
-    if (type === "error")   el.classList.add("msg--error");
-    if (type === "success") el.classList.add("msg--success");
+    el.textContent = msg || "";
+    el.className = "formMsg";
+    if (type) el.classList.add(type);
   }
 
-  function disableForm(form, text) {
-    const btn = form.querySelector("button[type='submit']");
-    if (btn) { btn.disabled = true; btn.textContent = text; }
+  function disableForm(form, submitLabel = "Please wait...") {
+    if (!form) return;
+    const fields = form.querySelectorAll("input, select, textarea, button");
+    fields.forEach((el) => (el.disabled = true));
+
+    const submit = form.querySelector('button[type="submit"]');
+    if (submit) submit.dataset.originalText = submit.textContent;
+    if (submit) submit.textContent = submitLabel;
   }
 
-  function enableForm(form, text) {
-    const btn = form.querySelector("button[type='submit']");
-    if (btn) { btn.disabled = false; btn.textContent = text; }
+  function enableForm(form, submitLabel = "") {
+    if (!form) return;
+    const fields = form.querySelectorAll("input, select, textarea, button");
+    fields.forEach((el) => (el.disabled = false));
+
+    const submit = form.querySelector('button[type="submit"]');
+    if (submit) {
+      submit.textContent = submitLabel || submit.dataset.originalText || submit.textContent;
+    }
+
+    if (inviteCodeInput?.readOnly) {
+      inviteCodeInput.disabled = false;
+    }
   }
 
   function shake(el) {
     if (!el) return;
-    el.animate([
-      { transform: "translateX(0)"  }, { transform: "translateX(-8px)" },
-      { transform: "translateX(8px)"}, { transform: "translateX(-6px)" },
-      { transform: "translateX(6px)"}, { transform: "translateX(0)"   },
-    ], { duration: 360, easing: "ease-out" });
+    el.classList.remove("shake");
+    void el.offsetWidth;
+    el.classList.add("shake");
   }
 
-  function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
-
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (c) => (
-      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c] || c
-    ));
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  function attachPartnerAssets(partnerName) {
-    const assets = partnerName && PARTNER_ASSETS[partnerName] ? PARTNER_ASSETS[partnerName] : {};
-    return { name: partnerName || "Partner", logo: assets.logo || "" };
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
   function format1(n) {
-    return (Math.round(Number(n) * 10) / 10).toFixed(1);
+    const num = Number(n);
+    return Number.isFinite(num) ? num.toFixed(1) : "0.0";
   }
-
-  // -----------------------------
-  // 8) INIT CHATBOT
-  // -----------------------------
-  const chatbot = initChatbot({
-    supabase,
-    panelChat:  UI.panelChat,
-    onRestart: () => {
-      lastQuizAnswers = null;
-      lastQuizResult  = null;
-      showQuiz();
-      resetQuizToDefaults();
-    },
-    onLogout:   doLogout,
-    escapeHtml,
-    sleep,
-  });
-
 });
