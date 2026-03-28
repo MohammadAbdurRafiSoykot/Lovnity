@@ -8,8 +8,6 @@ import {
   scoreQuiz,
 } from "./quizLogic.js";
 
-import { initChatbot } from "./chatbot.js";
-
 document.addEventListener("DOMContentLoaded", () => {
   const $ = (s) => document.querySelector(s);
 
@@ -391,6 +389,22 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastQuizResult  = null;
   let currentUserName = "Friend";
   let currentUserId   = null;
+  let chatSessionId   = null;
+  let chatQuizContext = null;
+  let chatEnded       = false;
+  let chatMessages    = [];
+
+  const chatWindow      = UI.panelChat.querySelector("#chatWindow");
+  const emotionChips    = UI.panelChat.querySelector("#emotionChips");
+  const chatInputRow    = UI.panelChat.querySelector("#chatInputRow");
+  const chatInput       = UI.panelChat.querySelector("#chatInput");
+  const chatSendBtn     = UI.panelChat.querySelector("#chatSendBtn");
+  const chatEndedBox    = UI.panelChat.querySelector("#chatEndedBox");
+  const chatSummaryText = UI.panelChat.querySelector("#chatSummaryText");
+  const chatRestartBtn  = UI.panelChat.querySelector("#chatRestartBtn");
+  const chatLogoutBtn   = UI.panelChat.querySelector("#chatLogoutBtn");
+
+  const CHAT_EMOTIONS = ["Happy 😊", "Anxious 😰", "Sad 😔", "Frustrated 😤", "Hopeful 🌱"];
 
   UI.quizBackBtn.addEventListener("click", () => { showWelcomeOnly(); });
 
@@ -432,7 +446,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (_) {}
     showChat();
-    chatbot.start(lastQuizResult, currentUserName, currentUserId);
+    await startChatSession(lastQuizResult, currentUserName, currentUserId);
   });
 
   async function saveQuizToDatabase(answers, result) {
@@ -623,7 +637,185 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // -----------------------------
-  // 7) HELPERS
+  // 7) CHAT INTEGRATION (no external chatbot.js)
+  // -----------------------------
+  function buildQuizContext(result) {
+    const score = Math.round(result.winner.avg * 10);
+    let lowestItem = null;
+    let lowestScore = Infinity;
+    if (lastQuizAnswers) {
+      const winnerItems = QUIZ_ITEMS.filter((i) => i.classId === result.winner.classId);
+      for (const item of winnerItems) {
+        const v = Number(lastQuizAnswers[item.id] ?? SLIDER_DEFAULT);
+        if (v < lowestScore) { lowestScore = v; lowestItem = item; }
+      }
+    }
+    const keyInsight = lowestItem
+      ? `User scored lowest in "${lowestItem.label}" (${lowestScore}/10), indicating a key friction point.`
+      : `User shows challenges in ${result.winner.label} with average ${format1(result.winner.avg)}/10.`;
+    return {
+      score,
+      problem_area: result.winner.label,
+      key_insight: keyInsight,
+    };
+  }
+
+  function scrollBottom() {
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  function addBubble(role, text) {
+    const d = document.createElement("div");
+    d.className = role === "assistant" ? "bubble bubble--bot" : "bubble bubble--user";
+    if (role === "assistant") {
+      d.innerHTML = escapeHtml(text)
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\n/g, "<br>");
+    } else {
+      d.innerHTML = escapeHtml(text);
+    }
+    chatWindow.appendChild(d);
+    scrollBottom();
+  }
+
+  function showTypingIndicator() {
+    const d = document.createElement("div");
+    d.className = "bubble bubble--typing";
+    d.id = "lovnityTyping";
+    d.innerHTML = '<div class="typingDots"><span></span><span></span><span></span></div>';
+    chatWindow.appendChild(d);
+    scrollBottom();
+  }
+
+  function removeTypingIndicator() {
+    document.getElementById("lovnityTyping")?.remove();
+  }
+
+  function setChatInputEnabled(on) {
+    chatInput.disabled = !on;
+    chatSendBtn.disabled = !on;
+  }
+
+
+async function chatRequest(message) {
+  const { data, error } = await supabase.functions.invoke('chat-handler', {
+    body: {
+      session_id: chatSessionId,
+      user_id: currentUserId,
+      message: message,
+      quiz_context: chatQuizContext,
+    }
+  });
+
+  if (error) {
+    console.error("Edge Function Error:", error);
+    throw new Error(error.message || "Could not reach the AI Coach");
+  }
+
+  return data;
+}
+
+  async function startChatSession(result, userName, userId) {
+    chatEnded = false;
+    chatMessages = [];
+    chatQuizContext = buildQuizContext(result);
+    chatSessionId = `${userId || "anon"}-${Date.now()}`;
+
+    chatWindow.innerHTML = "";
+    chatEndedBox.classList.add("hidden");
+    chatInputRow.classList.remove("hidden");
+    chatSummaryText.textContent = "";
+    chatInput.value = "";
+    setChatInputEnabled(false);
+
+    emotionChips.innerHTML = "";
+    CHAT_EMOTIONS.forEach((e) => {
+      const btn = document.createElement("button");
+      btn.className = "emotionBtn";
+      btn.textContent = e;
+      btn.addEventListener("click", () => sendChatMessage(e));
+      emotionChips.appendChild(btn);
+    });
+    emotionChips.classList.remove("hidden");
+
+    showTypingIndicator();
+    await sleep(500);
+    try {
+      const r = await chatRequest("start");
+      removeTypingIndicator();
+      const greeting = r.reply || `Hi ${userName || "Friend"}, I'm here with you.`;
+      addBubble("assistant", greeting);
+      chatMessages.push({ role: "assistant", content: greeting });
+    } catch (err) {
+      removeTypingIndicator();
+      addBubble("assistant", "I couldn't connect right now. Please try again in a moment.");
+      console.error("Chat start failed:", err);
+    } finally {
+      setChatInputEnabled(true);
+      chatInput.focus();
+    }
+  }
+
+  async function endChatSession() {
+    if (chatEnded) return;
+    chatEnded = true;
+    chatInputRow.classList.add("hidden");
+    emotionChips.classList.add("hidden");
+
+    showTypingIndicator();
+    await sleep(400);
+    removeTypingIndicator();
+
+    try {
+      const r = await chatRequest("END");
+      const summary = r.final_feedback_summary;
+      const feedback = summary?.final_feedback || r.reply || "Thank you for sharing today.";
+      const nextSteps = summary?.suggested_next_steps || "";
+      const fullSummary = nextSteps ? `${feedback}\n\nNext steps:\n${nextSteps}` : feedback;
+      chatSummaryText.textContent = fullSummary;
+    } catch (err) {
+      chatSummaryText.textContent = "Could not generate summary right now. Please try again.";
+      console.error("Summary failed:", err);
+    }
+    chatEndedBox.classList.remove("hidden");
+    scrollBottom();
+  }
+
+  async function sendChatMessage(prefill = null) {
+    const raw = prefill ?? chatInput.value;
+    const text = String(raw || "").trim();
+    if (!text || chatEnded) return;
+
+    if (!prefill) chatInput.value = "";
+    if (text.toUpperCase() === "END") {
+      await endChatSession();
+      return;
+    }
+
+    emotionChips.classList.add("hidden");
+    addBubble("user", text);
+    chatMessages.push({ role: "user", content: text });
+    setChatInputEnabled(false);
+    showTypingIndicator();
+
+    try {
+      const r = await chatRequest(text);
+      removeTypingIndicator();
+      const reply = r.reply || "I'm here with you. Tell me more.";
+      addBubble("assistant", reply);
+      chatMessages.push({ role: "assistant", content: reply });
+    } catch (err) {
+      removeTypingIndicator();
+      addBubble("assistant", "I had trouble replying. Could you send that again?");
+      console.error("Message failed:", err);
+    } finally {
+      setChatInputEnabled(true);
+      chatInput.focus();
+    }
+  }
+
+  // -----------------------------
+  // 8) HELPERS
   // -----------------------------
   function setMsg(el, text, type) {
     if (!el) return;
@@ -669,21 +861,19 @@ document.addEventListener("DOMContentLoaded", () => {
     return (Math.round(Number(n) * 10) / 10).toFixed(1);
   }
 
-  // -----------------------------
-  // 8) INIT CHATBOT
-  // -----------------------------
-  const chatbot = initChatbot({
-    supabase,
-    panelChat:  UI.panelChat,
-    onRestart: () => {
-      lastQuizAnswers = null;
-      lastQuizResult  = null;
-      showQuiz();
-      resetQuizToDefaults();
-    },
-    onLogout:   doLogout,
-    escapeHtml,
-    sleep,
+  chatSendBtn.addEventListener("click", () => sendChatMessage());
+  chatInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendChatMessage();
+    }
   });
+  chatRestartBtn.addEventListener("click", () => {
+    lastQuizAnswers = null;
+    lastQuizResult = null;
+    showQuiz();
+    resetQuizToDefaults();
+  });
+  chatLogoutBtn.addEventListener("click", doLogout);
 
 });
