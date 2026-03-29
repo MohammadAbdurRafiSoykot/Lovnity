@@ -21,22 +21,22 @@ The application has been modernized to run entirely without a dedicated Node.js/
 * **Frontend**: Vanilla HTML/CSS/JS. Communicates directly with Supabase for Auth and Edge Functions.
 * **Backend**: Supabase Edge Functions (Deno/TypeScript). Handles LLM orchestration, safety checks, and routing.
 * **Database**: Supabase PostgreSQL.
-* **LLM Provider**: Groq API (`llama-3.3-70b-versatile`).
+* **LLM Provider**: OPEN AI API (`gpt-4o-mini`)(Cost efficient model).
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript, Supabase JS Client
 - **Edge Function**: Deno, TypeScript
 - **Database**: Supabase (PostgreSQL)
-- **AI**: Groq API, Llama 3.3 70B
+- **AI**: OPEN AI API, gpt-4o-mini
 
 ---
 ### Environment Variables
 To run the Edge Function locally, create a `.env` file inside the `supabase/functions/` directory:
 
 \`\`\`env
-GROQ_API_KEY=your_groq_api_key
-LLM_MODEL=llama-3.3-70b-versatile
+OPEN AI API=your_openai_api_key
+LLM_MODEL=gpt-4o-mini
 SUPABASE_URL=your_local_or_live_supabase_url
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 \`\`\`
@@ -66,7 +66,7 @@ Deploy the Edge Function to your live Supabase project:
 npx supabase link --project-ref your-project-id
 
 # Set your production secrets
-npx supabase secrets set GROQ_API_KEY=your_key_here
+npx supabase secrets set OPEN_AI_API_KEY=your_key_here
 
 # Deploy the function
 npx supabase functions deploy chat-handler --no-verify-jwt
