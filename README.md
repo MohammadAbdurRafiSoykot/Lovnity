@@ -31,56 +31,7 @@ The application has been modernized to run entirely without a dedicated Node.js/
 - **AI**: Groq API, Llama 3.3 70B
 
 ---
-
-## 🚀 Getting Started
-
-### 1. Prerequisites
-- Node.js and npm (for the Supabase CLI)
-- Docker Desktop (required for local Edge Function testing)
-- A [Supabase](https://supabase.com/) account
-- A [Groq](https://console.groq.com/) API key
-
-### 2. Database Setup
-Run the following SQL in your Supabase SQL Editor to create the required tables:
-
-\`\`\`sql
--- Quiz Results
-CREATE TABLE quiz_results (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id),
-  answers JSONB,
-  class_averages JSONB,
-  recommended_class TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Chat Summaries (Generated when user types "END")
-CREATE TABLE chat_summaries (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id),
-  session_id TEXT NOT NULL,
-  final_feedback TEXT,
-  suggested_next_steps TEXT,
-  quiz_context JSONB,
-  turn_count INTEGER,
-  generated_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Chat Messages (Memory for the Edge Function)
-CREATE TABLE chat_messages (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  session_id TEXT NOT NULL,
-  user_id UUID REFERENCES auth.users(id),
-  role TEXT NOT NULL,
-  content TEXT NOT NULL,
-  metadata JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE INDEX idx_chat_messages_session ON chat_messages(session_id);
-\`\`\`
-
-### 3. Environment Variables
+### Environment Variables
 To run the Edge Function locally, create a `.env` file inside the `supabase/functions/` directory:
 
 \`\`\`env
@@ -90,7 +41,7 @@ SUPABASE_URL=your_local_or_live_supabase_url
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 \`\`\`
 
-### 4. Running Locally
+### Running Locally
 
 **Start the Backend (Edge Function):**
 \`\`\`bash
