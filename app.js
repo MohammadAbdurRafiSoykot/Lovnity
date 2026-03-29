@@ -22,12 +22,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // 2) UI REFS
   // -----------------------------
   const UI = {
-    panelLogin:    $("#panelLogin"),
-    panelRegister: $("#panelRegister"),
-    panelWelcome:  $("#panelWelcome"),
-    panelQuiz:     $("#panelQuiz"),
-    panelResults:  $("#panelResults"),
-    panelChat:     $("#panelChat"),
+    panelLogin:           $("#panelLogin"),
+    panelRegister:        $("#panelRegister"),
+    panelPartnerRegister: $("#panelPartnerRegister"),
+    panelWelcome:         $("#panelWelcome"),
+    panelQuiz:            $("#panelQuiz"),
+    panelResults:         $("#panelResults"),
+    panelChat:            $("#panelChat"),
 
     topSubtitle: $("#topSubtitle"),
 
@@ -100,6 +101,19 @@ document.addEventListener("DOMContentLoaded", () => {
   UI.goToRegisterBtn.addEventListener("click", showRegister);
   UI.backToLoginBtn.addEventListener("click",  showLogin);
 
+  // "Join via partner invite" link shown when a partner code is typed in the normal register form
+  const goToPartnerFlowBtn = $("#goToPartnerFlowBtn");
+  if (goToPartnerFlowBtn) {
+    goToPartnerFlowBtn.addEventListener("click", () => {
+      showLogin();
+      // Scroll the partner invite box into view smoothly
+      setTimeout(() => {
+        const box = $("#invitePartnerInput");
+        if (box) { box.scrollIntoView({ behavior: "smooth", block: "center" }); box.focus(); }
+      }, 100);
+    });
+  }
+
   // Business invite code input — alphanumeric only (e.g. 253fe3)
   const inviteEl = $("#inviteCodeInput");
   if (inviteEl) {
@@ -149,20 +163,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     disableForm(UI.registerForm, "Creating account...");
 
-    // Check if this is a partner join (code exists in users.couple_code)
+    // Block couple/partner codes — normal signup only accepts business codes
     const { data: isPartnerCode } = await supabase
       .rpc("check_couple_code", { input_code: inviteCode.toLowerCase() });
 
-    // If not a partner code, validate against business_invites (normal business signup)
-    if (!isPartnerCode) {
-      const { data: bizCheck, error: bizErr } = await supabase
-        .rpc("check_business_code", { input_code: inviteCode.toLowerCase() });
-      if (bizErr || !bizCheck) {
-        enableForm(UI.registerForm, "Sign Up");
-        setMsg(UI.regMsg, "Invalid or already used invite code.", "error");
-        shake(UI.panelRegister);
-        return;
-      }
+    if (isPartnerCode) {
+      enableForm(UI.registerForm, "Sign Up");
+      setMsg(UI.regMsg, "This is a partner invite code. Please use the partner join flow on the login page.", "error");
+      const partnerLinkRow = $("#partnerLinkRow");
+      if (partnerLinkRow) partnerLinkRow.style.display = "block";
+      shake(UI.panelRegister);
+      return;
+    }
+
+    // Validate against business_invites
+    const { data: bizCheck, error: bizErr } = await supabase
+      .rpc("check_business_code", { input_code: inviteCode.toLowerCase() });
+    if (bizErr || !bizCheck) {
+      enableForm(UI.registerForm, "Sign Up");
+      setMsg(UI.regMsg, "Invalid or already used invite code.", "error");
+      shake(UI.panelRegister);
+      return;
     }
 
     const { data, error } = await supabase.auth.signUp({
@@ -170,12 +191,12 @@ document.addEventListener("DOMContentLoaded", () => {
       password,
       options: {
         data: {
-          first_name:    firstName,
-          last_name:     surname,
+          first_name:      firstName,
+          last_name:       surname,
           age,
           gender,
-          business_code: inviteCode.toLowerCase(),
-          is_partner_join: isPartnerCode ? true : false,
+          business_code:   inviteCode.toLowerCase(),
+          is_partner_join: false,
         },
       },
     });
@@ -191,8 +212,63 @@ document.addEventListener("DOMContentLoaded", () => {
     await fetchProfileAndShowWelcome(data.user);
   });
 
+  // ── Partner register form ──────────────────────────────────────
+  const partnerRegisterForm = $("#partnerRegisterForm");
+  const partnerRegBackBtn   = $("#partnerRegBackBtn");
+
+  if (partnerRegBackBtn) {
+    partnerRegBackBtn.addEventListener("click", () => showLogin());
+  }
+
+  if (partnerRegisterForm) {
+    partnerRegisterForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const partnerRegMsg = $("#partnerRegMsg");
+      setMsg(partnerRegMsg, "");
+
+      const firstName  = $("#partnerFirstNameInput").value.trim();
+      const surname    = $("#partnerSurnameInput").value.trim();
+      const gender     = $("#partnerGenderInput").value.trim();
+      const age        = Number($("#partnerAgeInput").value.trim());
+      const email      = $("#partnerRegEmail").value.trim();
+      const password   = $("#partnerRegPassword").value;
+      const inviteCode = $("#partnerInviteCodeInput").value.trim();
+
+      if (inviteCode.length !== 6) {
+        setMsg(partnerRegMsg, "Partner invite code is missing. Please go back and try again.", "error");
+        return;
+      }
+
+      disableForm(partnerRegisterForm, "Creating account...");
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name:      firstName,
+            last_name:       surname,
+            age,
+            gender,
+            business_code:   inviteCode.toLowerCase(),
+            is_partner_join: true,
+          },
+        },
+      });
+
+      if (error) {
+        enableForm(partnerRegisterForm, "Sign Up");
+        setMsg(partnerRegMsg, error.message, "error");
+        return;
+      }
+
+      setMsg(partnerRegMsg, "Success! Logging you in...", "success");
+      await sleep(400);
+      await fetchProfileAndShowWelcome(data.user);
+    });
+  }
+
   // ── Partner invite flow ────────────────────────────────────────
-  // User enters a 6-digit partner invite code (sent by their partner)
   // → validates the code → pre-fills register form → user signs up
   if (invitePartnerBtn) {
     invitePartnerBtn.addEventListener("click", () => submitPartnerInvite());
@@ -248,20 +324,20 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Valid — switch to register panel with the code pre-filled
+      // Valid — switch to partner register panel with the code pre-filled
       setMsg(invitePartnerMsg, "Code accepted! Fill in your details below.", "success");
       await sleep(300);
 
-      showRegister();
+      showPartnerRegister();
 
-      // Pre-fill AND lock the business invite code field
-      const inviteCodeField = $("#inviteCodeInput");
-      if (inviteCodeField) {
-        inviteCodeField.value    = code;
-        inviteCodeField.readOnly = true;
+      // Pre-fill AND lock the partner invite code field
+      const partnerCodeField = $("#partnerInviteCodeInput");
+      if (partnerCodeField) {
+        partnerCodeField.value    = code;
+        partnerCodeField.readOnly = true;
       }
 
-      setMsg(UI.regMsg, "💌 Joining your partner — your code has been filled in automatically.", "success");
+      setMsg($("#partnerRegMsg"), "💌 Joining your partner — your code has been filled in automatically.", "success");
 
     } catch (err) {
       console.error("submitPartnerInvite error:", err);
@@ -315,9 +391,10 @@ document.addEventListener("DOMContentLoaded", () => {
     await supabase.auth.signOut();
     UI.loginForm.reset();
     UI.registerForm.reset();
-    // Unlock the invite code field if it was locked
-    const inviteCodeField = $("#inviteCodeInput");
-    if (inviteCodeField) inviteCodeField.readOnly = false;
+    if (partnerRegisterForm) partnerRegisterForm.reset();
+    enableForm(UI.loginForm,    "Log In");
+    enableForm(UI.registerForm, "Sign Up");
+    if (partnerRegisterForm) enableForm(partnerRegisterForm, "Sign Up");
     setMsg(UI.loginMsg, "");
     setMsg(UI.regMsg,   "");
     showLogin();
@@ -675,6 +752,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function hideAllPanels() {
     UI.panelLogin.classList.add("hidden");
     UI.panelRegister.classList.add("hidden");
+    UI.panelPartnerRegister.classList.add("hidden");
     UI.panelWelcome.classList.add("hidden");
     UI.panelQuiz.classList.add("hidden");
     UI.panelResults.classList.add("hidden");
@@ -693,6 +771,14 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.panelRegister.classList.remove("hidden");
     UI.topSubtitle.textContent = "Create your new account.";
     setMsg(UI.regMsg, "");
+    const partnerLinkRow = $("#partnerLinkRow");
+    if (partnerLinkRow) partnerLinkRow.style.display = "none";
+  }
+
+  function showPartnerRegister() {
+    hideAllPanels();
+    UI.panelPartnerRegister.classList.remove("hidden");
+    UI.topSubtitle.textContent = "Join your partner on Lovnity.";
   }
 
   function showWelcomeOnly() {

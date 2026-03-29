@@ -147,6 +147,72 @@
               <button class="btn btn--primary" type="submit">Sign Up</button>
             </div>
             <div class="msg" id="regMsg"></div>
+            <div class="partnerLinkRow" id="partnerLinkRow" style="display:none; margin-top:10px; text-align:center;">
+              <span style="font-size:0.85rem; opacity:0.8;">Have a partner invite code? </span>
+              <button id="goToPartnerFlowBtn" type="button" style="background:none; border:none; cursor:pointer; color: var(--accent, #f472b6); font-size:0.85rem; text-decoration:underline; padding:0;">Join via partner invite →</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ── PARTNER REGISTER PANEL ── -->
+        <div class="card card--light hidden" id="panelPartnerRegister">
+          <div class="card__head">
+            <div>
+              <div class="pill"><span class="pill__dot"></span> Join Your Partner</div>
+              <p class="card__sub">💌 Create your account and connect with your partner.</p>
+            </div>
+            <div class="chip">Partner</div>
+          </div>
+
+          <form class="form" id="partnerRegisterForm">
+            <div class="row-fields">
+              <div class="field half-width">
+                <label class="label" for="partnerFirstNameInput">First Name</label>
+                <input class="input" id="partnerFirstNameInput" type="text" autocomplete="given-name" required />
+              </div>
+              <div class="field half-width">
+                <label class="label" for="partnerSurnameInput">Surname</label>
+                <input class="input" id="partnerSurnameInput" type="text" autocomplete="family-name" required />
+              </div>
+            </div>
+
+            <div class="row-fields">
+              <div class="field half-width">
+                <label class="label" for="partnerGenderInput">Gender</label>
+                <select class="input select" id="partnerGenderInput" required>
+                  <option value="" disabled selected>Select...</option>
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Non-binary">Non-binary</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+              </div>
+              <div class="field half-width">
+                <label class="label" for="partnerAgeInput">Age</label>
+                <input class="input" id="partnerAgeInput" type="number" min="18" max="120" required />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label" for="partnerRegEmail">Email</label>
+              <input class="input" id="partnerRegEmail" type="email" autocomplete="email" required />
+            </div>
+
+            <div class="field">
+              <label class="label" for="partnerRegPassword">Password</label>
+              <input class="input" id="partnerRegPassword" type="password" autocomplete="new-password" required />
+            </div>
+
+            <div class="field highlight-field">
+              <label class="label" for="partnerInviteCodeInput">Partner Invite Code</label>
+              <input class="input code-style" id="partnerInviteCodeInput" type="text" maxlength="6" placeholder="______" autocomplete="off" spellcheck="false" required readonly />
+            </div>
+
+            <div class="actions">
+              <button class="btn btn--ghost" id="partnerRegBackBtn" type="button">Back</button>
+              <button class="btn btn--primary" type="submit">Sign Up</button>
+            </div>
+            <div class="msg" id="partnerRegMsg"></div>
           </form>
         </div>
 
