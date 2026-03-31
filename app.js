@@ -564,6 +564,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatSummaryText = UI.panelChat.querySelector("#chatSummaryText");
   const chatRestartBtn  = UI.panelChat.querySelector("#chatRestartBtn");
   const chatLogoutBtn   = UI.panelChat.querySelector("#chatLogoutBtn");
+  const chatHomepageBtn = UI.panelChat.querySelector("#chatHomepageBtn");
+  const chatAgainBtn    = UI.panelChat.querySelector("#chatAgainBtn");
 
   const CHAT_EMOTIONS = ["Happy 😊", "Anxious 😰", "Sad 😔", "Frustrated 😤", "Hopeful 🌱"];
 
@@ -1045,5 +1047,27 @@ async function chatRequest(message) {
     resetQuizToDefaults();
   });
   chatLogoutBtn.addEventListener("click", doLogout);
+
+  // Homepage button: go back to the welcome/dashboard screen
+  chatHomepageBtn.addEventListener("click", () => {
+    showWelcomeOnly();
+  });
+
+  // Chat Again button: reset the chat panel and start a new conversation
+  chatAgainBtn.addEventListener("click", () => {
+    const chatEndedBox = UI.panelChat.querySelector("#chatEndedBox");
+    const chatMessages = UI.panelChat.querySelector("#chatMessages");
+    const chatInputArea = UI.panelChat.querySelector(".chat-input-area");
+    if (chatEndedBox)   chatEndedBox.classList.add("hidden");
+    if (chatMessages)   chatMessages.innerHTML = "";
+    if (chatInputArea)  chatInputArea.classList.remove("hidden");
+    showChat();
+    // Trigger a fresh AI greeting
+    if (typeof startChat === "function") {
+      startChat(lastQuizResult);
+    } else {
+      appendMessage("ai", "Hello again! Feel free to continue our conversation. 💗");
+    }
+  });
 
 });
