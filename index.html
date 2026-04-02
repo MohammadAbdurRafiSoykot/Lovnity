@@ -216,6 +216,42 @@
           </form>
         </div>
 
+        <!-- ── EDIT PROFILE PANEL ── -->
+        <div class="card card--light hidden" id="panelEditProfile">
+          <div class="card__head">
+            <div>
+              <div class="pill"><span class="pill__dot"></span> Edit Profile</div>
+              <p class="card__sub">Update your name or change your password.</p>
+            </div>
+            <div class="chip">Account</div>
+          </div>
+          <div class="form">
+            <div class="row-fields">
+              <div class="field half-width">
+                <label class="label" for="editFirstName">First Name</label>
+                <input class="input" id="editFirstName" type="text" autocomplete="given-name" />
+              </div>
+              <div class="field half-width">
+                <label class="label" for="editLastName">Last Name</label>
+                <input class="input" id="editLastName" type="text" autocomplete="family-name" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="editNewPassword">New Password</label>
+              <input class="input" id="editNewPassword" type="password" autocomplete="new-password" placeholder="Leave blank to keep current" />
+            </div>
+            <div class="field">
+              <label class="label" for="editConfirmPassword">Confirm New Password</label>
+              <input class="input" id="editConfirmPassword" type="password" autocomplete="new-password" placeholder="Repeat new password" />
+            </div>
+            <div class="msg" id="editProfileMsg"></div>
+            <div class="actions">
+              <button class="btn btn--ghost" id="cancelEditProfileBtn" type="button">← Back</button>
+              <button class="btn btn--primary" id="saveProfileBtn" type="button">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
         <!-- ── WELCOME PANEL ── -->
         <div class="card card--light hidden" id="panelWelcome">
           <div class="card__head">
@@ -381,7 +417,10 @@
         <span class="profileInfo__connected">💑 Partner connected</span>
       </div>
     </div>
-    <div class="actions">
+    <!-- ── End Edit Profile ── -->
+
+    <div class="actions" style="margin-top:14px;">
+      <button class="btn btn--ghost" id="editProfileBtn" type="button">✏️ Edit Profile</button>
       <button class="btn btn--primary" id="profileModalOk" type="button">Close</button>
     </div>
   </div>

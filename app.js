@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
     panelLogin:           $("#panelLogin"),
     panelRegister:        $("#panelRegister"),
     panelPartnerRegister: $("#panelPartnerRegister"),
+    panelEditProfile:     $("#panelEditProfile"),
     panelWelcome:         $("#panelWelcome"),
     panelQuiz:            $("#panelQuiz"),
     panelResults:         $("#panelResults"),
@@ -437,6 +438,9 @@ document.addEventListener("DOMContentLoaded", () => {
             .eq("id", user.id)
             .single();
 
+          // Cache for edit form
+          if (profile) _cachedProfile = profile;
+
           const meta      = user.user_metadata || {};
           const firstName = profile?.first_name || meta.first_name || "—";
           const lastName  = profile?.last_name  || meta.last_name  || "—";
@@ -541,6 +545,104 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (UI.closeProfileModal) UI.closeProfileModal.addEventListener("click", closeProfileModalFn);
   if (UI.profileModalOk)    UI.profileModalOk.addEventListener("click",    closeProfileModalFn);
+
+  // ── Edit Profile Panel ──────────────────────────────────────
+  const editProfileBtn       = document.getElementById("editProfileBtn");
+  const cancelEditProfileBtn = document.getElementById("cancelEditProfileBtn");
+  const saveProfileBtn       = document.getElementById("saveProfileBtn");
+  const editProfileMsg       = document.getElementById("editProfileMsg");
+
+  let _cachedProfile = null;
+
+  function showEditProfile() {
+    UI.modalBackdrop.classList.add("hidden");
+    UI.profileModal.classList.add("hidden");
+    hideAllPanels();
+    UI.panelEditProfile.classList.remove("hidden");
+    UI.topSubtitle.textContent = "Edit your profile.";
+    const fnEl = document.getElementById("editFirstName");
+    const lnEl = document.getElementById("editLastName");
+    const pwEl = document.getElementById("editNewPassword");
+    const cpEl = document.getElementById("editConfirmPassword");
+    if (fnEl) fnEl.value = _cachedProfile?.first_name || "";
+    if (lnEl) lnEl.value = _cachedProfile?.last_name  || "";
+    if (pwEl) pwEl.value = "";
+    if (cpEl) cpEl.value = "";
+    setMsg(editProfileMsg, "");
+    if (fnEl) fnEl.focus();
+  }
+
+  if (editProfileBtn)       editProfileBtn.addEventListener("click", showEditProfile);
+  if (cancelEditProfileBtn) cancelEditProfileBtn.addEventListener("click", () => showWelcomeOnly());
+
+  if (saveProfileBtn) {
+    saveProfileBtn.addEventListener("click", async () => {
+      const firstName   = (document.getElementById("editFirstName")?.value  || "").trim();
+      const lastName    = (document.getElementById("editLastName")?.value   || "").trim();
+      const newPassword = (document.getElementById("editNewPassword")?.value || "").trim();
+      const confirmPw   = (document.getElementById("editConfirmPassword")?.value || "").trim();
+
+      setMsg(editProfileMsg, "");
+
+      if (!firstName && !lastName && !newPassword) {
+        setMsg(editProfileMsg, "Please fill in at least one field to update.", "error");
+        return;
+      }
+      if (newPassword && newPassword !== confirmPw) {
+        setMsg(editProfileMsg, "Passwords do not match.", "error");
+        shake(document.getElementById("editConfirmPassword"));
+        return;
+      }
+      if (newPassword && newPassword.length < 6) {
+        setMsg(editProfileMsg, "Password must be at least 6 characters.", "error");
+        return;
+      }
+
+      saveProfileBtn.disabled    = true;
+      saveProfileBtn.textContent = "Saving…";
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated.");
+
+        if (firstName || lastName) {
+          const updates = {};
+          if (firstName) updates.first_name = firstName;
+          if (lastName)  updates.last_name  = lastName;
+          const { error: dbErr } = await supabase
+            .from("users")
+            .update(updates)
+            .eq("id", user.id);
+          if (dbErr) throw new Error("Could not update name: " + dbErr.message);
+          if (_cachedProfile) {
+            if (firstName) _cachedProfile.first_name = firstName;
+            if (lastName)  _cachedProfile.last_name  = lastName;
+          }
+          const displayName = lastName || firstName;
+          if (UI.welcomeTitle && displayName) {
+            UI.welcomeTitle.textContent = `Welcome, ${escapeHtml(displayName)}! 💗`;
+          }
+        }
+
+        if (newPassword) {
+          const { error: pwErr } = await supabase.auth.updateUser({ password: newPassword });
+          if (pwErr) throw new Error("Could not update password: " + pwErr.message);
+        }
+
+        setMsg(editProfileMsg, "✅ Profile updated successfully!", "success");
+        await sleep(1200);
+        showWelcomeOnly();
+
+      } catch (err) {
+        console.error("Save profile error:", err);
+        setMsg(editProfileMsg, err.message || "Something went wrong. Please try again.", "error");
+      } finally {
+        saveProfileBtn.disabled    = false;
+        saveProfileBtn.textContent = "Save Changes";
+      }
+    });
+  }
+  // ── End Edit Profile Panel ───────────────────────────────────
   // ── End profile modal ───────────────────────────────────────
 
   // -----------------------------
@@ -755,6 +857,7 @@ document.addEventListener("DOMContentLoaded", () => {
     UI.panelLogin.classList.add("hidden");
     UI.panelRegister.classList.add("hidden");
     UI.panelPartnerRegister.classList.add("hidden");
+    UI.panelEditProfile.classList.add("hidden");
     UI.panelWelcome.classList.add("hidden");
     UI.panelQuiz.classList.add("hidden");
     UI.panelResults.classList.add("hidden");
