@@ -177,10 +177,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Validate against business_invites
+     // Validate against business_invites
     const { data: bizCheck, error: bizErr } = await supabase
-      .rpc("business_invites", { input_code: inviteCode.toLowerCase() });
-    if (bizErr || !bizCheck) {
+      .rpc("check_business_code", { input_code: inviteCode.toLowerCase() });
+    
+      if (bizErr || !bizCheck) {
       enableForm(UI.registerForm, "Sign Up");
       setMsg(UI.regMsg, "Invalid or already used invite code.", "error");
       shake(UI.panelRegister);
