@@ -138,8 +138,8 @@
             </div>
 
             <div class="field highlight-field">
-              <label class="label" for="inviteCodeInput">Business Invite Code (6 Characters)</label>
-              <input class="input code-style" id="inviteCodeInput" type="text" maxlength="6" placeholder="______" autocomplete="off" spellcheck="false" required />
+              <label class="label" for="inviteCodeInput">Business Invite Code (6 digit)</label>
+              <input class="input code-style" id="inviteCodeInput" type="number" maxlength="6" placeholder="_ _ _ _ _ _" autocomplete="off" spellcheck="false" required />
             </div>
 
             <div class="actions">
@@ -272,8 +272,9 @@
               <p class="welcome__company" id="welcomeCompanyLine"></p>
             </div>
             <div class="actions center-actions">
-              <button class="btn btn--primary full-width" id="continueBtn" type="button">Continue to Quiz</button>
-              <button class="btn btn--ghost   full-width" id="logoutBtn"   type="button">Log Out</button>
+              <button class="btn btn--primary full-width" id="continueBtn" type="button" style="margin-top: 10px">Take New Quiz</button>
+              <button class="btn btn--primary full-width hidden" id="welcomeChatBtn" type="button" style="margin-top: 10px;">💬 Continue Chat</button>
+              <button class="btn btn--ghost full-width" id="logoutBtn" type="button" style="margin-top: 10px;">Log Out</button>
             </div>
           </div>
         </div>
@@ -418,9 +419,10 @@
       </div>
     </div>
     <!-- ── End Edit Profile ── -->
-
-    <div class="actions" style="margin-top:14px;">
+    
+    <div class="actions" style="display: flex; gap: 10px; margin-top: 15px;">
       <button class="btn btn--ghost" id="editProfileBtn" type="button">✏️ Edit Profile</button>
+      <button class="btn btn--ghost" id="deleteAccountBtn" type="button" style=" color: #ff4d4d; border-color: rgba(255, 77, 77, 0.3);">Delete Account</button>
       <button class="btn btn--primary" id="profileModalOk" type="button">Close</button>
     </div>
   </div>

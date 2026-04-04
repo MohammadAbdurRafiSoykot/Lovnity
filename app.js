@@ -45,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
     welcomeTitle:       $("#welcomeTitle"),
     welcomeCompany:     $("#welcomeCompany"),
     welcomeCompanyLine: $("#welcomeCompanyLine"),
+    welcomeChatBtn:     $("#welcomeChatBtn"),
     continueBtn:        $("#continueBtn"),
     logoutBtn:          $("#logoutBtn"),
     logoutBtn2:         $("#logoutBtn2"),
@@ -297,19 +298,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // Uses an RPC function that runs as SECURITY DEFINER (bypasses RLS)
-      // Run this SQL once in Supabase SQL Editor:
-      //
-      //   create or replace function check_couple_code(input_code text)
-      //   returns boolean
-      //   language sql
-      //   security definer
-      //   as $$
-      //     select exists (
-      //       select 1 from users where couple_code = input_code
-      //     );
-      //   $$;
-      //
       const { data: isValid, error: rpcErr } = await supabase
         .rpc("check_couple_code", { input_code: code });
 
@@ -352,7 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   // ── End partner invite flow ────────────────────────────────────
 
-  async function fetchProfileAndShowWelcome(user) {
+async function fetchProfileAndShowWelcome(user) {
     if (!user) return;
     let lastName    = "User";
     let partnerName = null;
@@ -382,7 +370,52 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error("Profile fetch error:", err);
     }
+    
     showWelcome({ lastName, partner: attachPartnerAssets(partnerName) });
+
+    // ── NEW: Check for previous quiz history to show Chat button ──
+    try {
+      const { data: pastQuiz } = await supabase
+        .from("quiz_results")
+        .select("answers, class_averages, recommended_class")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (pastQuiz && UI.welcomeChatBtn) {
+        // Unhide the chat button and change the quiz button text
+        UI.welcomeChatBtn.classList.remove("hidden");
+        UI.continueBtn.textContent = "Retake Quiz";
+
+        // Wire up the click handler to jump straight to chat
+        UI.welcomeChatBtn.onclick = async () => {
+          // Restore previous answers into memory so the AI context builder works
+          lastQuizAnswers = pastQuiz.answers;
+
+          // Reconstruct the "result" object expected by the chat
+          const winnerClass = pastQuiz.class_averages.find(c => c.label === pastQuiz.recommended_class) || pastQuiz.class_averages[0];
+          lastQuizResult = { winner: winnerClass, classResults: pastQuiz.class_averages };
+
+          // Grab user details for the AI greeting
+          currentUserId = user.id;
+          const meta = user.user_metadata || {};
+          currentUserName = meta.first_name || meta.last_name || "Friend";
+          
+          const { data: p } = await supabase.from("users").select("first_name, last_name").eq("id", user.id).single();
+          if (p) currentUserName = p.first_name || p.last_name || currentUserName;
+
+          showChat();
+          await startChatSession(lastQuizResult, currentUserName, currentUserId);
+        };
+      } else if (UI.welcomeChatBtn) {
+        // Hide it if no past quiz exists
+        UI.welcomeChatBtn.classList.add("hidden");
+        UI.continueBtn.textContent = "Continue to Quiz";
+      }
+    } catch (err) {
+      console.error("Quiz history fetch error:", err);
+    }
   }
 
   UI.continueBtn.addEventListener("click", () => showQuiz());
@@ -546,6 +579,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (UI.closeProfileModal) UI.closeProfileModal.addEventListener("click", closeProfileModalFn);
   if (UI.profileModalOk)    UI.profileModalOk.addEventListener("click",    closeProfileModalFn);
+
+  // ── Delete Account Logic ──────────────────────────────────────
+  const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener("click", async () => {
+      // Prompt 1: Standard warning
+      const confirmFirst = window.confirm(
+        "🚨 WARNING: This will permanently delete your account, quiz results, and all chat history. This action cannot be undone.\n\nAre you sure you want to proceed?"
+      );
+      if (!confirmFirst) return;
+
+      // Prompt 2: Hard confirmation (Typing DELETE)
+      const confirmSecond = window.prompt("To confirm, please type the word DELETE in all caps:");
+      if (confirmSecond !== "DELETE") {
+        alert("Deletion cancelled.");
+        return;
+      }
+
+      deleteAccountBtn.disabled = true;
+      deleteAccountBtn.textContent = "Deleting...";
+
+      try {
+        // Call the secure Supabase function
+        const { error } = await supabase.rpc("delete_user_account");
+        if (error) throw error;
+
+        alert("Your account and all associated data have been permanently deleted.");
+        
+        // Log them out and reload the page to clear all memory
+        await supabase.auth.signOut();
+        window.location.reload();
+
+      } catch (err) {
+        console.error("Account deletion error:", err);
+        alert("Could not delete your account right now. Please try again later.");
+        deleteAccountBtn.disabled = false;
+        deleteAccountBtn.textContent = "Delete Account";
+      }
+    });
+  }
 
   // ── Edit Profile Panel ──────────────────────────────────────
   const editProfileBtn       = document.getElementById("editProfileBtn");
